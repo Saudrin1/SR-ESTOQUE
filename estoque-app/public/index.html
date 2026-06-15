@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle de Estoque</title>
+<title>Sérgio Radiadores — Controle de Estoque</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="shortcut icon" href="favicon.ico">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -64,21 +66,14 @@
   /* ── TOPBAR ── */
   .topbar {
     background:var(--bg2); border-bottom:1px solid var(--border);
-    padding:0 20px; display:flex; align-items:center;
-    justify-content:space-between; height:52px;
+    padding:0 20px; display:grid;
+    grid-template-columns:1fr auto 1fr; align-items:center; height:64px;
     position:sticky; top:0; z-index:50;
   }
-  .topbar-left { display:flex; align-items:center; gap:12px; }
-  .topbar-logo { font-size:15px; font-weight:600; }
-  .topbar-logo span { color:var(--accent); }
-  .topbar-logo-img { height:30px; display:block; }
-  .setor-tag {
-    font-size:11px; font-weight:600; padding:3px 9px;
-    border-radius:20px; letter-spacing:.03em;
-  }
-  .tag-estoque { background:rgba(59,130,246,.15); color:#60a5fa; }
-  .tag-vendas  { background:rgba(168,85,247,.15); color:#c084fc; }
-  .topbar-right { display:flex; align-items:center; gap:10px; }
+  .topbar-left { display:flex; align-items:center; gap:12px; justify-self:start; }
+  .topbar-center { display:flex; align-items:center; justify-content:center; justify-self:center; }
+  .topbar-logo-img { height:44px; display:block; }
+  .topbar-right { display:flex; align-items:center; gap:10px; justify-self:end; }
   .user-info { font-size:12px; color:var(--text2); }
   .btn-sair {
     padding:5px 12px; border-radius:var(--radius);
@@ -119,6 +114,7 @@
   /* ── CARDS ── */
   .cards { display:grid; gap:10px; margin-bottom:18px; }
   .cards-5 { grid-template-columns:repeat(5,1fr); }
+  .cards-6 { grid-template-columns:repeat(6,1fr); }
   .cards-4 { grid-template-columns:repeat(4,1fr); }
   .card {
     background:var(--bg2); border:1px solid var(--border);
@@ -244,6 +240,7 @@
   tr:hover td { background:var(--bg3); }
   .row-alert td { background:rgba(239,68,68,.06)!important; }
   .row-ajuste td { background:rgba(249,115,22,.05)!important; }
+  .row-entrada td { background:rgba(168,85,247,.05)!important; }
   .row-pendente td { background:rgba(168,85,247,.05)!important; }
 
   /* ── BADGES ── */
@@ -254,6 +251,7 @@
   .b-outros   { background:var(--bg3); color:var(--text2); }
   .b-ajuste   { background:rgba(249,115,22,.15); color:var(--orange); }
   .b-saida    { background:rgba(239,68,68,.15);  color:#f87171; }
+  .b-entrada  { background:rgba(168,85,247,.15); color:#c084fc; }
   .b-pendente { background:rgba(168,85,247,.15); color:#c084fc; }
   .b-atendido { background:rgba(34,197,94,.15);  color:#4ade80; }
   .b-cancelado{ background:var(--bg3); color:var(--text3); }
@@ -300,6 +298,79 @@
   .empty { text-align:center; padding:36px 20px; color:var(--text3); font-size:13px; }
   .limiar-row { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text2); margin-bottom:12px; }
   .limiar-row input { width:68px; padding:6px 8px; background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-size:13px; font-family:var(--font); outline:none; }
+
+  /* ── NF-e IMPORT ── */
+  .nfe-drop {
+    border:2px dashed var(--border2); border-radius:var(--radius-lg);
+    padding:36px 20px; text-align:center; cursor:pointer;
+    transition:all .15s; background:var(--bg2);
+  }
+  .nfe-drop:hover, .nfe-drop.dragover { border-color:var(--accent); background:var(--accent-bg); }
+  .nfe-drop-icon { font-size:36px; margin-bottom:10px; }
+  .nfe-drop-text { font-size:14px; font-weight:500; margin-bottom:4px; }
+  .nfe-drop-sub  { font-size:12px; color:var(--text3); }
+  .nfe-header {
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:14px 16px; margin-bottom:14px;
+    display:flex; gap:24px; flex-wrap:wrap;
+  }
+  .nfe-header .nfe-h-item { font-size:13px; }
+  .nfe-header .nfe-h-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.04em; }
+  .nfe-header .nfe-h-val { font-weight:500; margin-top:2px; }
+  .nfe-item {
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:12px 14px; margin-bottom:10px;
+  }
+  .nfe-item.casado { border-left:3px solid var(--green); }
+  .nfe-item.nao-casado { border-left:3px solid var(--orange); }
+  .nfe-item.ignorado { opacity:.5; }
+  .nfe-item-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:8px; }
+  .nfe-item-nota { flex:1; }
+  .nfe-item-nota .titulo { font-size:13.5px; font-weight:500; margin-bottom:2px; }
+  .nfe-item-nota .sub { font-size:12px; color:var(--text3); }
+  .nfe-item-qtd { text-align:right; white-space:nowrap; }
+  .nfe-item-qtd .q { font-size:18px; font-weight:600; color:var(--green); }
+  .nfe-item-qtd .u { font-size:11px; color:var(--text3); }
+  .nfe-match {
+    background:var(--bg3); border-radius:var(--radius); padding:8px 10px;
+    font-size:12.5px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .nfe-match .arrow { color:var(--text3); }
+  .nfe-match-info { flex:1; min-width:160px; }
+  .nfe-match-info .m-desc { font-weight:500; }
+  .nfe-match-info .m-meta { font-size:11px; color:var(--text3); }
+  .conf-badge { font-size:10px; padding:1px 6px; border-radius:10px; font-weight:600; text-transform:uppercase; }
+  .conf-alta  { background:rgba(34,197,94,.15); color:var(--green); }
+  .conf-media { background:rgba(234,179,8,.15); color:var(--yellow); }
+  .conf-baixa { background:rgba(249,115,22,.15); color:var(--orange); }
+  .nfe-item-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; align-items:center; }
+  .nfe-vincular-btn {
+    background:var(--bg3); border:1px solid var(--border); color:var(--accent);
+    padding:4px 10px; border-radius:6px; font-size:12px; cursor:pointer; font-family:var(--font);
+  }
+  .nfe-vincular-btn:hover { background:var(--accent-bg); }
+  .nfe-mini-search { position:relative; flex:1; min-width:200px; }
+  .nfe-mini-search input {
+    width:100%; padding:6px 10px; background:var(--bg3); border:1px solid var(--border);
+    border-radius:6px; color:var(--text); font-size:12.5px; font-family:var(--font); outline:none;
+  }
+  .nfe-mini-search input:focus { border-color:var(--accent); }
+  .nfe-mini-dd {
+    position:absolute; top:calc(100% + 3px); left:0; right:0; background:var(--bg2);
+    border:1px solid var(--border2); border-radius:8px; z-index:300; max-height:200px;
+    overflow-y:auto; display:none; box-shadow:0 8px 24px rgba(0,0,0,.5);
+  }
+  .nfe-mini-dd.show { display:block; }
+  .nfe-mini-dd .it { padding:7px 10px; cursor:pointer; font-size:12px; border-bottom:1px solid var(--border); }
+  .nfe-mini-dd .it:hover { background:var(--bg3); }
+  .chk-memorizar { display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--text2); cursor:pointer; }
+  .resultado-card {
+    background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:24px; text-align:center;
+  }
+  .resultado-card .big { font-size:40px; margin-bottom:8px; }
+  .resultado-card h3 { font-size:17px; font-weight:600; margin-bottom:6px; }
+  .resultado-card p { font-size:13px; color:var(--text2); margin-bottom:16px; }
   ::-webkit-scrollbar{width:6px;height:6px}
   ::-webkit-scrollbar-track{background:var(--bg)}
   ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -312,9 +383,29 @@
   <div class="login-card">
     <img src="logo.png" alt="Sérgio Radiadores" class="login-logo-img">
     <div class="login-sub">Sistema de controle de estoque em tempo real</div>
-    <label class="login-label">Seu nome</label>
-    <input class="login-input" type="text" id="login-nome" placeholder="Ex: João Silva" autocomplete="off" onkeydown="if(event.key==='Enter')entrar()">
+    <label class="login-label">Usuário</label>
+    <input class="login-input" type="text" id="login-user" placeholder="Seu usuário" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()">
+    <label class="login-label">Senha</label>
+    <input class="login-input" type="password" id="login-senha" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')entrar()">
+    <div class="msg msg-err" id="msg-login-err"></div>
     <button class="btn-entrar" onclick="entrar()">Entrar →</button>
+  </div>
+</div>
+
+<!-- ═══ TELA TROCAR SENHA (primeiro acesso) ═══ -->
+<div class="login-screen" id="trocar-screen" style="display:none">
+  <div class="login-card">
+    <img src="logo.png" alt="Sérgio Radiadores" class="login-logo-img">
+    <div class="login-sub">Defina uma nova senha para continuar</div>
+    <label class="login-label">Senha atual</label>
+    <input class="login-input" type="password" id="tr-atual" placeholder="Senha atual" autocomplete="current-password">
+    <label class="login-label">Nova senha</label>
+    <input class="login-input" type="password" id="tr-nova" placeholder="Nova senha (mín. 4 caracteres)" autocomplete="new-password">
+    <label class="login-label">Confirmar nova senha</label>
+    <input class="login-input" type="password" id="tr-conf" placeholder="Repita a nova senha" autocomplete="new-password" onkeydown="if(event.key==='Enter')salvarNovaSenha()">
+    <div class="msg msg-err" id="msg-tr-err"></div>
+    <div class="msg msg-ok" id="msg-tr-ok"></div>
+    <button class="btn-entrar" onclick="salvarNovaSenha()">Salvar senha →</button>
   </div>
 </div>
 
@@ -324,6 +415,9 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
+      <button class="btn-sair" id="btn-admin" onclick="abrirAdmin()" style="display:none">⚙ Usuários</button>
+    </div>
+    <div class="topbar-center">
       <img src="logo.png" alt="Sérgio Radiadores" class="topbar-logo-img">
     </div>
     <div class="topbar-right">
@@ -418,8 +512,9 @@
       <div class="filters">
         <input type="text" id="h-q" placeholder="Buscar..." oninput="carregarHistorico()">
         <select id="h-tipo" onchange="carregarHistorico()">
-          <option value="">Saídas e ajustes</option>
+          <option value="">Todas as movimentações</option>
           <option value="saida">Só saídas</option>
+          <option value="entrada">Só entradas</option>
           <option value="ajuste">Só ajustes</option>
         </select>
         <select id="h-per" onchange="carregarHistorico()">
@@ -458,6 +553,41 @@
       <div id="tab-alert"></div>
     </div>
 
+    <!-- ── IMPORTAR NF-e ── -->
+    <div class="panel" id="panel-nfe">
+      <p class="section-title">Importar nota fiscal de entrada (XML)</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Suba o XML da NF-e de compra. O sistema lê os itens, casa com seu cadastro e soma ao estoque após sua confirmação.</p>
+
+      <!-- ETAPA 1: Upload -->
+      <div id="nfe-upload">
+        <div class="nfe-drop" id="nfe-drop">
+          <input type="file" id="nfe-file" accept=".xml" style="display:none" onchange="lerArquivoNFe(this.files[0])">
+          <div class="nfe-drop-icon">📄</div>
+          <div class="nfe-drop-text">Clique para selecionar o XML da nota</div>
+          <div class="nfe-drop-sub">ou arraste o arquivo aqui</div>
+        </div>
+        <div class="msg msg-err" id="msg-nfe-err"></div>
+      </div>
+
+      <!-- ETAPA 2: Conferência -->
+      <div id="nfe-conferencia" style="display:none">
+        <div class="nfe-header" id="nfe-header"></div>
+        <div class="msg msg-info" id="msg-nfe-aviso" style="display:none"></div>
+        <div id="nfe-itens-lista"></div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap">
+          <div class="fg" style="flex:1;min-width:180px">
+            <label>Responsável pela importação</label>
+            <input type="text" id="nfe-resp" placeholder="Seu nome">
+          </div>
+          <button class="btn btn-ghost" onclick="cancelarNFe()">Cancelar</button>
+          <button class="btn btn-success" id="btn-confirmar-nfe" onclick="confirmarNFe()">✓ Confirmar e aplicar entradas</button>
+        </div>
+      </div>
+
+      <!-- ETAPA 3: Resultado -->
+      <div id="nfe-resultado" style="display:none"></div>
+    </div>
+
   </div><!-- /main -->
 </div><!-- /app -->
 
@@ -493,30 +623,117 @@
   </div>
 </div>
 
+<!-- MODAL ADMIN: USUÁRIOS -->
+<div class="overlay" id="modal-admin">
+  <div class="modal" style="width:560px">
+    <h3>⚙ Gerenciar usuários</h3>
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Criar novo usuário</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input class="login-input" style="margin:0" type="text" id="nu-user" placeholder="Usuário (login)" autocomplete="off">
+        <input class="login-input" style="margin:0" type="text" id="nu-nome" placeholder="Nome completo" autocomplete="off">
+        <input class="login-input" style="margin:0" type="text" id="nu-senha" placeholder="Senha inicial" autocomplete="off">
+        <label class="chk-memorizar" style="font-size:13px"><input type="checkbox" id="nu-admin"> é administrador</label>
+      </div>
+      <div class="msg msg-err" id="msg-nu-err" style="margin-bottom:8px"></div>
+      <button class="btn btn-primary btn-sm" onclick="criarNovoUsuario()">+ Criar usuário</button>
+    </div>
+    <div id="lista-usuarios"></div>
+    <div class="modal-footer" style="margin-top:14px">
+      <button class="btn btn-ghost" onclick="fecharModal('admin')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESETAR SENHA -->
+<div class="overlay" id="modal-reset">
+  <div class="modal">
+    <h3>Resetar senha</h3>
+    <p id="reset-desc"></p>
+    <input class="login-input" type="text" id="reset-senha" placeholder="Nova senha" autocomplete="off">
+    <div class="msg msg-err" id="msg-reset-err"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('reset')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarReset()">Resetar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════
 //  ESTADO GLOBAL
 // ═══════════════════════════════════════
-let SETOR = '', NOME = '';
+let SETOR = 'estoque', NOME = '';
+let TOKEN = null, IS_ADMIN = false;
 let ws = null, wsReconect = null;
 let movs = [], pedidosCache = [], estoqueCache = [];
-let selItemAtivo = {};   // {ctx: cod}
-let excluirId = null, pedidoAtivoId = null;
+let selItemAtivo = {};
+let excluirId = null, pedidoAtivoId = null, resetUserId = null;
 let pagE = 1, filtE = [];
+
+// Wrapper de fetch que injeta o token e trata 401
+async function api(url, opts = {}) {
+  opts.headers = opts.headers || {};
+  if (TOKEN) opts.headers['x-token'] = TOKEN;
+  const r = await fetch(url, opts);
+  if (r.status === 401) { sair(); throw new Error('Sessão expirada'); }
+  return r;
+}
 
 // ═══════════════════════════════════════
 //  LOGIN
 // ═══════════════════════════════════════
-function entrar() {
-  NOME = document.getElementById('login-nome').value.trim();
-  if (!NOME) { alert('Informe seu nome.'); return; }
-  SETOR = 'estoque';
-  sessionStorage.setItem('es_nome', NOME);
-  sessionStorage.setItem('es_setor', SETOR);
-  iniciarApp();
+async function entrar() {
+  const err = document.getElementById('msg-login-err');
+  err.classList.remove('show');
+  const usuario = document.getElementById('login-user').value.trim();
+  const senha   = document.getElementById('login-senha').value;
+  if (!usuario || !senha) { err.textContent='Informe usuário e senha.'; err.classList.add('show'); return; }
+  try {
+    const r = await fetch('/api/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ usuario, senha })
+    });
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.error || 'Falha no login'; err.classList.add('show'); return; }
+    TOKEN = d.token; NOME = d.nome; IS_ADMIN = d.is_admin;
+    sessionStorage.setItem('es_token', TOKEN);
+    sessionStorage.setItem('es_nome', NOME);
+    sessionStorage.setItem('es_admin', IS_ADMIN ? '1' : '');
+    if (d.deve_trocar) { mostrarTrocarSenha(); return; }
+    iniciarApp();
+  } catch(e) { err.textContent='Erro ao comunicar com o servidor.'; err.classList.add('show'); }
 }
 
-function sair() {
+function mostrarTrocarSenha() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('trocar-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.display = 'none';
+}
+
+async function salvarNovaSenha() {
+  const err = document.getElementById('msg-tr-err');
+  const ok  = document.getElementById('msg-tr-ok');
+  err.classList.remove('show'); ok.classList.remove('show');
+  const atual = document.getElementById('tr-atual').value;
+  const nova  = document.getElementById('tr-nova').value;
+  const conf  = document.getElementById('tr-conf').value;
+  if (!nova || nova.length < 4) { err.textContent='A nova senha deve ter ao menos 4 caracteres.'; err.classList.add('show'); return; }
+  if (nova !== conf) { err.textContent='As senhas não conferem.'; err.classList.add('show'); return; }
+  try {
+    const r = await api('/api/trocar-senha', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ senhaAtual: atual, senhaNova: nova })
+    });
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.error; err.classList.add('show'); return; }
+    ok.textContent = 'Senha alterada! Entrando...'; ok.classList.add('show');
+    setTimeout(() => { document.getElementById('trocar-screen').style.display='none'; iniciarApp(); }, 900);
+  } catch(e) { err.textContent='Erro ao salvar.'; err.classList.add('show'); }
+}
+
+async function sair() {
+  try { if (TOKEN) await fetch('/api/logout', { method:'POST', headers:{'x-token':TOKEN} }); } catch(e) {}
   sessionStorage.clear();
   if (ws) ws.close();
   location.reload();
@@ -526,13 +743,12 @@ function sair() {
 //  INICIAR APP
 // ═══════════════════════════════════════
 function iniciarApp() {
-  NOME  = sessionStorage.getItem('es_nome')  || NOME;
-  SETOR = 'estoque';
-  if (!NOME) return;
-
+  if (!TOKEN) return;
   document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('trocar-screen').style.display = 'none';
   document.getElementById('app-screen').style.display   = 'block';
   document.getElementById('user-info').textContent = NOME;
+  document.getElementById('btn-admin').style.display = IS_ADMIN ? 'inline-block' : 'none';
 
   construirNav();
   conectarWS();
@@ -546,6 +762,7 @@ function iniciarApp() {
 const TABS_ESTOQUE = [
   { id:'saida',     label:'Registrar Saída' },
   { id:'ajuste',    label:'Ajustar Estoque' },
+  { id:'nfe',       label:'Importar NF-e' },
   { id:'historico', label:'Histórico' },
   { id:'estoque',   label:'Estoque'   },
   { id:'alertas',   label:'Alertas',  badge:'alt' },
@@ -611,6 +828,12 @@ function tratarMensagem(data) {
       if (document.getElementById('panel-historico').classList.contains('active')) carregarHistorico();
       carregarStats();
       break;
+    case 'nfe_importada':
+      carregarStats();
+      toast('📥 NF-e importada', `${data.resultado.aplicados} item(ns) adicionado(s) ao estoque`, 'ok');
+      if (document.getElementById('panel-historico').classList.contains('active')) carregarHistorico();
+      if (document.getElementById('panel-estoque').classList.contains('active'))   carregarEstoque();
+      break;
   }
 }
 
@@ -619,12 +842,13 @@ function tratarMensagem(data) {
 // ═══════════════════════════════════════
 async function carregarStats() {
   try {
-    const r = await fetch('/api/stats');
+    const r = await api('/api/stats');
     const s = await r.json();
     document.getElementById('cards-area').innerHTML = `
-      <div class="cards cards-5">
+      <div class="cards cards-6">
         <div class="card"><div class="card-label">Total de itens</div><div class="card-value">${s.total}</div><div class="card-sub">no cadastro</div></div>
         <div class="card"><div class="card-label">Saídas hoje</div><div class="card-value cv-green">${s.hoje}</div><div class="card-sub">registros</div></div>
+        <div class="card"><div class="card-label">Entradas hoje</div><div class="card-value cv-purple">${s.entradas||0}</div><div class="card-sub">de NF-e</div></div>
         <div class="card"><div class="card-label">Ajustes hoje</div><div class="card-value cv-orange">${s.ajustes}</div><div class="card-sub">correções</div></div>
         <div class="card"><div class="card-label">Estoque baixo</div><div class="card-value cv-yellow">${s.baixo}</div><div class="card-sub">itens com alerta</div></div>
         <div class="card"><div class="card-label">Sem estoque</div><div class="card-value cv-red">${s.zero}</div><div class="card-sub">itens esgotados</div></div>
@@ -642,7 +866,7 @@ async function buscar(ctx, q) {
   const dd = document.getElementById('dd-' + ctx);
   if (!q || q.length < 2) { dd.classList.remove('show'); return; }
   try {
-    const r = await fetch(`/api/itens?q=${encodeURIComponent(q)}`);
+    const r = await api(`/api/itens?q=${encodeURIComponent(q)}`);
     const items = await r.json();
     if (!items.length) {
       dd.innerHTML = '<div class="dd-item"><span class="dd-desc" style="color:var(--text3)">Nenhum item encontrado</span></div>';
@@ -663,7 +887,7 @@ document.addEventListener('click', e => {
 
 async function selItem(ctx, cod) {
   try {
-    const r  = await fetch(`/api/itens/${cod}`);
+    const r  = await api(`/api/itens/${cod}`);
     const it = await r.json();
     selItemAtivo[ctx] = cod;
     document.getElementById('dd-' + ctx).classList.remove('show');
@@ -723,7 +947,7 @@ async function registrarSaida() {
   const obs    = document.getElementById('f-obs').value.trim();
   if (!cod) { err.textContent='Selecione um item primeiro.'; err.classList.add('show'); return; }
   try {
-    const r = await fetch('/api/saidas', {
+    const r = await api('/api/saidas', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ cod, qty, motivo, pessoa, os, obs, setor: SETOR })
     });
@@ -770,7 +994,7 @@ async function aplicarAjuste() {
   if (!cod) return;
   if (isNaN(novoQt) || novoQt < 0) { err.textContent='Valor inválido.'; err.classList.add('show'); return; }
   try {
-    const r = await fetch('/api/ajustes', {
+    const r = await api('/api/ajustes', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ cod, novoQt, motivo, pessoa, obs, setor: SETOR })
     });
@@ -799,7 +1023,7 @@ async function fazerPedido() {
   const obs = document.getElementById('p-obs').value.trim();
   if (!cod) { err.textContent='Selecione um item primeiro.'; err.classList.add('show'); return; }
   try {
-    const r = await fetch('/api/pedidos', {
+    const r = await api('/api/pedidos', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ cod, qty, solicitante: NOME, obs })
     });
@@ -828,7 +1052,7 @@ async function carregarHistorico() {
     const params = new URLSearchParams();
     if (tipo) params.set('tipo', tipo);
     if (per)  params.set('periodo', per);
-    const r    = await fetch('/api/movimentacoes?' + params);
+    const r    = await api('/api/movimentacoes?' + params);
     let rows   = await r.json();
     if (q) rows = rows.filter(m => m.desc.toLowerCase().includes(q) || m.cod.includes(q) || m.pessoa.toLowerCase().includes(q));
     movs = rows;
@@ -838,7 +1062,7 @@ async function carregarHistorico() {
 
 function renderHistorico(rows) {
   const motL = { venda:'Venda', interno:'Uso interno', descarte:'Descarte', outros:'Outros',
-                 contagem:'Contagem', correcao:'Correção', reposicao:'Reposição', perda:'Perda' };
+                 contagem:'Contagem', correcao:'Correção', reposicao:'Reposição', perda:'Perda', nfe:'NF-e' };
   const fdt  = d => { const dt=new Date(d); return dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); };
   const tab  = document.getElementById('tab-hist');
   if (!rows.length) { tab.innerHTML='<div class="empty">Nenhuma movimentação registrada ainda.</div>'; return; }
@@ -854,12 +1078,18 @@ function renderHistorico(rows) {
       ${podeDeletar ? '<th style="width:36px"></th>' : ''}
     </tr></thead><tbody>` +
   rows.map(m => {
-    const isSaida = m.tipo === 'saida';
-    const tipoBadge = isSaida ? '<span class="badge b-saida">Saída</span>' : '<span class="badge b-ajuste">Ajuste</span>';
+    const isSaida   = m.tipo === 'saida';
+    const isEntrada = m.tipo === 'entrada';
+    const tipoBadge = isSaida   ? '<span class="badge b-saida">Saída</span>'
+                    : isEntrada ? '<span class="badge b-entrada">Entrada</span>'
+                    :             '<span class="badge b-ajuste">Ajuste</span>';
     const detalhe = isSaida
       ? `<strong style="color:var(--red)">−${m.qty}</strong>`
+      : isEntrada
+      ? `${m.anterior_qt}→<strong>${m.novo_qt}</strong> <span style="font-size:11px;color:var(--green)">(+${m.qty})</span>`
       : `${m.anterior_qt}→<strong>${m.novo_qt}</strong> <span style="font-size:11px;color:${m.diff>=0?'var(--green)':'var(--red)'}">(${m.diff>=0?'+':''}${m.diff})</span>`;
-    return `<tr class="${isSaida?'':'row-ajuste'}">
+    const rowCls = isSaida ? '' : (isEntrada ? 'row-entrada' : 'row-ajuste');
+    return `<tr class="${rowCls}">
       <td style="font-size:11px;color:var(--text3)">${fdt(m.criado_em)}</td>
       <td title="${m.desc}">${m.desc.substring(0,36)}<br><span style="font-size:11px;color:var(--text3)">${m.cod}</span></td>
       <td>${tipoBadge}</td>
@@ -891,7 +1121,7 @@ async function carregarEstoque() {
   const q   = (document.getElementById('e-q')?.value || '').toLowerCase();
   const ord = document.getElementById('e-ord')?.value || 'baixo';
   try {
-    const r = await fetch('/api/itens' + (q ? `?q=${encodeURIComponent(q)}` : ''));
+    const r = await api('/api/itens' + (q ? `?q=${encodeURIComponent(q)}` : ''));
     let rows = await r.json();
     if (ord === 'baixo') rows.sort((a,b) => a.qt - b.qt);
     else if (ord === 'az')  rows.sort((a,b) => a.desc.localeCompare(b.desc));
@@ -934,7 +1164,7 @@ function pagEst(p) { if(p<1) return; pagE=p; renderEstoque(); }
 // ═══════════════════════════════════════
 async function carregarAlertas() {
   try {
-    const r    = await fetch('/api/itens');
+    const r    = await api('/api/itens');
     const all  = await r.json();
     const lim  = parseInt(document.getElementById('limiar')?.value || 5);
     const lista = all.filter(it => it.qt <= lim).sort((a,b) => a.qt - b.qt);
@@ -952,12 +1182,228 @@ async function carregarAlertas() {
 }
 
 // ═══════════════════════════════════════
-//  PEDIDOS
+//  IMPORTAR NF-e
 // ═══════════════════════════════════════
+let nfeDados = null;   // { nota, itens } da análise atual
+
+// Drag and drop
+(function initDrop() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const drop = document.getElementById('nfe-drop');
+    if (!drop) return;
+    drop.addEventListener('click', () => document.getElementById('nfe-file').click());
+    ['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('dragover'); }));
+    drop.addEventListener('drop', e => {
+      const f = e.dataTransfer.files[0];
+      if (f) lerArquivoNFe(f);
+    });
+  });
+})();
+
+function lerArquivoNFe(file) {
+  const err = document.getElementById('msg-nfe-err');
+  err.classList.remove('show');
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.xml')) {
+    err.textContent = 'Selecione um arquivo .xml válido.'; err.classList.add('show'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => analisarNFe(e.target.result);
+  reader.onerror = () => { err.textContent='Erro ao ler o arquivo.'; err.classList.add('show'); };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function analisarNFe(xml) {
+  const err = document.getElementById('msg-nfe-err');
+  err.classList.remove('show');
+  try {
+    const r = await api('/api/nfe/analisar', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ xml })
+    });
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.error; err.classList.add('show'); return; }
+    nfeDados = d;
+    document.getElementById('nfe-resp').value = NOME;
+    renderConferencia(d);
+  } catch(e) { err.textContent='Erro ao analisar o XML.'; err.classList.add('show'); }
+}
+
+function renderConferencia(d) {
+  document.getElementById('nfe-upload').style.display = 'none';
+  document.getElementById('nfe-resultado').style.display = 'none';
+  document.getElementById('nfe-conferencia').style.display = 'block';
+
+  // Cabeçalho da nota
+  document.getElementById('nfe-header').innerHTML = `
+    <div class="nfe-h-item"><div class="nfe-h-label">Fornecedor</div><div class="nfe-h-val">${d.nota.fornecNome||'—'}</div></div>
+    <div class="nfe-h-item"><div class="nfe-h-label">Nota nº</div><div class="nfe-h-val">${d.nota.numero||'—'}</div></div>
+    <div class="nfe-h-item"><div class="nfe-h-label">CNPJ</div><div class="nfe-h-val">${d.nota.fornecCnpj||'—'}</div></div>
+    <div class="nfe-h-item"><div class="nfe-h-label">Itens na nota</div><div class="nfe-h-val">${d.itens.length}</div></div>`;
+
+  // Aviso se já importada
+  const aviso = document.getElementById('msg-nfe-aviso');
+  if (d.jaImportada) {
+    aviso.textContent = '⚠ Esta nota já foi importada anteriormente. Importar de novo vai somar as quantidades outra vez.';
+    aviso.className = 'msg msg-org show'; aviso.style.display = 'block';
+  } else {
+    const casados = d.itens.filter(i => i.casado).length;
+    aviso.textContent = `${casados} de ${d.itens.length} itens casaram automaticamente. Revise os demais antes de confirmar.`;
+    aviso.className = 'msg msg-info show'; aviso.style.display = 'block';
+  }
+
+  renderItensNFe();
+}
+
+function renderItensNFe() {
+  const cont = document.getElementById('nfe-itens-lista');
+  cont.innerHTML = nfeDados.itens.map(it => {
+    const casado = !!it.sugestao;
+    const cls = it.ignorar ? 'ignorado' : (casado ? 'casado' : 'nao-casado');
+    const confCls = it.sugestao ? `conf-${it.sugestao.confianca}` : '';
+    let matchHtml;
+    if (it.ignorar) {
+      matchHtml = `<div class="nfe-match"><span style="color:var(--text3)">Item será ignorado (não entra no estoque)</span></div>`;
+    } else if (casado) {
+      matchHtml = `
+        <div class="nfe-match">
+          <span class="arrow">→ vincula a:</span>
+          <div class="nfe-match-info">
+            <div class="m-desc">${it.sugestao.desc.substring(0,50)}</div>
+            <div class="m-meta">Cód ${it.sugestao.cod} | Ref ${it.sugestao.ref||'—'} | Estoque atual: ${it.sugestao.qtAtual} → <strong style="color:var(--green)">${it.sugestao.qtAtual + it.nota.qtd}</strong></div>
+          </div>
+          <span class="conf-badge ${confCls}">${it.sugestao.metodo}</span>
+        </div>`;
+    } else {
+      matchHtml = `
+        <div class="nfe-match" style="background:rgba(249,115,22,.08)">
+          <span style="color:var(--orange)">⚠ Não encontrado no cadastro — vincule manualmente:</span>
+        </div>`;
+    }
+    return `
+      <div class="nfe-item ${cls}" id="nfe-item-${it.idx}">
+        <div class="nfe-item-top">
+          <div class="nfe-item-nota">
+            <div class="titulo">${it.nota.xProd}</div>
+            <div class="sub">Cód. fornecedor: ${it.nota.cProd||'—'}${it.nota.cEAN?` | EAN: ${it.nota.cEAN}`:''}</div>
+          </div>
+          <div class="nfe-item-qtd">
+            <div class="q">+${it.nota.qtd}</div>
+            <div class="u">${it.nota.unidade||'un'}</div>
+          </div>
+        </div>
+        ${matchHtml}
+        <div class="nfe-item-actions">
+          <div class="nfe-mini-search">
+            <input type="text" placeholder="${casado?'Trocar vínculo...':'Buscar item do cadastro...'}" 
+              oninput="buscarVinculo(${it.idx}, this.value)" onfocus="buscarVinculo(${it.idx}, this.value)" autocomplete="off">
+            <div class="nfe-mini-dd" id="nfe-dd-${it.idx}"></div>
+          </div>
+          ${casado ? `<label class="chk-memorizar"><input type="checkbox" ${it.memorizar!==false?'checked':''} onchange="toggleMemorizar(${it.idx}, this.checked)"> memorizar p/ próximas notas</label>` : ''}
+          <button class="nfe-vincular-btn" onclick="toggleIgnorar(${it.idx})">${it.ignorar?'Reativar':'Ignorar'}</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function buscarVinculo(idx, q) {
+  const dd = document.getElementById('nfe-dd-' + idx);
+  if (!q || q.length < 2) { dd.classList.remove('show'); return; }
+  try {
+    const r = await api(`/api/itens?q=${encodeURIComponent(q)}`);
+    const items = await r.json();
+    if (!items.length) { dd.innerHTML='<div class="it" style="color:var(--text3)">Nada encontrado</div>'; dd.classList.add('show'); return; }
+    dd.innerHTML = items.slice(0,12).map(it =>
+      `<div class="it" onclick="vincularItem(${idx}, '${it.cod}')">${it.desc.substring(0,48)}<br><span style="color:var(--text3);font-size:11px">${it.cod} | Ref ${it.ref||'—'} | qt:${it.qt}</span></div>`
+    ).join('');
+    dd.classList.add('show');
+  } catch(e) {}
+}
+
+async function vincularItem(idx, cod) {
+  document.getElementById('nfe-dd-' + idx).classList.remove('show');
+  try {
+    const r = await api(`/api/itens/${cod}`);
+    const it = await r.json();
+    const item = nfeDados.itens.find(x => x.idx === idx);
+    item.sugestao = { cod: it.cod, desc: it.desc, ref: it.ref, qtAtual: it.qt, metodo: 'manual', confianca: 'alta' };
+    item.ignorar = false;
+    item.memorizar = true;
+    renderItensNFe();
+  } catch(e) {}
+}
+
+function toggleMemorizar(idx, val) {
+  const item = nfeDados.itens.find(x => x.idx === idx);
+  if (item) item.memorizar = val;
+}
+
+function toggleIgnorar(idx) {
+  const item = nfeDados.itens.find(x => x.idx === idx);
+  if (item) { item.ignorar = !item.ignorar; renderItensNFe(); }
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.nfe-mini-search')) document.querySelectorAll('.nfe-mini-dd').forEach(d => d.classList.remove('show'));
+});
+
+async function confirmarNFe() {
+  const resp = document.getElementById('nfe-resp').value.trim() || NOME;
+  const itensParaImportar = nfeDados.itens
+    .filter(it => it.sugestao && !it.ignorar)
+    .map(it => ({
+      cod: it.sugestao.cod,
+      cProd: it.nota.cProd,
+      xProd: it.nota.xProd,
+      qtd: it.nota.qtd,
+      memorizar: it.memorizar !== false
+    }));
+
+  if (!itensParaImportar.length) { alert('Nenhum item vinculado para importar. Vincule ao menos um item.'); return; }
+
+  const btn = document.getElementById('btn-confirmar-nfe');
+  btn.disabled = true; btn.textContent = 'Aplicando...';
+  try {
+    const r = await api('/api/nfe/confirmar', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nota: nfeDados.nota, itens: itensParaImportar, pessoa: resp })
+    });
+    const d = await r.json();
+    if (!r.ok) { alert(d.error || 'Erro ao importar'); btn.disabled=false; btn.textContent='✓ Confirmar e aplicar entradas'; return; }
+    renderResultadoNFe(d.resultado);
+    carregarStats();
+  } catch(e) { alert('Erro ao comunicar com o servidor.'); btn.disabled=false; btn.textContent='✓ Confirmar e aplicar entradas'; }
+}
+
+function renderResultadoNFe(res) {
+  document.getElementById('nfe-conferencia').style.display = 'none';
+  const div = document.getElementById('nfe-resultado');
+  div.style.display = 'block';
+  div.innerHTML = `
+    <div class="resultado-card">
+      <div class="big">✓</div>
+      <h3>Importação concluída!</h3>
+      <p>${res.aplicados} item(ns) adicionado(s) ao estoque${res.ignorados?`, ${res.ignorados} ignorado(s)`:''}.${res.erros.length?` ${res.erros.length} erro(s).`:''}</p>
+      <button class="btn btn-primary" onclick="cancelarNFe()">Importar outra nota</button>
+    </div>`;
+}
+
+function cancelarNFe() {
+  nfeDados = null;
+  document.getElementById('nfe-conferencia').style.display = 'none';
+  document.getElementById('nfe-resultado').style.display = 'none';
+  document.getElementById('nfe-upload').style.display = 'block';
+  document.getElementById('nfe-file').value = '';
+  const btn = document.getElementById('btn-confirmar-nfe');
+  btn.disabled = false; btn.textContent = '✓ Confirmar e aplicar entradas';
+  document.getElementById('msg-nfe-err').classList.remove('show');
+}
+
 async function carregarPedidos() {
   const status = document.getElementById('ped-status')?.value || '';
   try {
-    const r    = await fetch('/api/pedidos' + (status ? `?status=${status}` : ''));
+    const r    = await api('/api/pedidos' + (status ? `?status=${status}` : ''));
     const rows = await r.json();
     pedidosCache = rows;
     renderPedidos(rows);
@@ -1003,7 +1449,7 @@ function fecharModal(id) { document.getElementById('modal-'+id).classList.remove
 
 async function confirmarExcluir() {
   try {
-    await fetch(`/api/movimentacoes/${excluirId}`, { method:'DELETE' });
+    await api(`/api/movimentacoes/${excluirId}`, { method:'DELETE' });
     fecharModal('excluir');
     carregarHistorico();
     carregarStats();
@@ -1021,7 +1467,7 @@ function abrirModalPedido(id) {
 async function atualizarPedido(status) {
   const obs = document.getElementById('modal-ped-obs').value.trim();
   try {
-    await fetch(`/api/pedidos/${pedidoAtivoId}`, {
+    await api(`/api/pedidos/${pedidoAtivoId}`, {
       method:'PATCH', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ status, obs })
     });
@@ -1048,17 +1494,116 @@ function toast(titulo, msg, tipo='info') {
 // ═══════════════════════════════════════
 //  CARDS AREA (placeholder)
 // ═══════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+// ═══════════════════════════════════════
+//  ADMIN: GESTÃO DE USUÁRIOS
+// ═══════════════════════════════════════
+async function abrirAdmin() {
+  document.getElementById('modal-admin').classList.add('show');
+  carregarUsuarios();
+}
+
+async function carregarUsuarios() {
+  try {
+    const r = await api('/api/usuarios');
+    const users = await r.json();
+    const cont = document.getElementById('lista-usuarios');
+    cont.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Usuário</th><th>Nome</th><th style="width:70px">Tipo</th><th style="width:140px">Ações</th></tr></thead>
+      <tbody>` + users.map(u => `
+        <tr>
+          <td style="font-family:var(--mono);font-size:12px">${u.usuario}</td>
+          <td>${u.nome}</td>
+          <td>${u.is_admin ? '<span class="badge b-entrada">Admin</span>' : '<span class="badge b-outros">Usuário</span>'}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="abrirReset(${u.id}, '${u.usuario}')">Senha</button>
+            ${u.usuario !== 'admin' ? `<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="removerUsuario(${u.id}, '${u.usuario}')">Remover</button>` : ''}
+          </td>
+        </tr>`).join('') + '</tbody></table></div>';
+  } catch(e) {}
+}
+
+async function criarNovoUsuario() {
+  const err = document.getElementById('msg-nu-err');
+  err.classList.remove('show');
+  const usuario = document.getElementById('nu-user').value.trim();
+  const nome    = document.getElementById('nu-nome').value.trim();
+  const senha   = document.getElementById('nu-senha').value;
+  const is_admin = document.getElementById('nu-admin').checked;
+  if (!usuario || !nome || !senha) { err.textContent='Preencha usuário, nome e senha.'; err.classList.add('show'); return; }
+  try {
+    const r = await api('/api/usuarios', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ usuario, nome, senha, is_admin })
+    });
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.error; err.classList.add('show'); return; }
+    document.getElementById('nu-user').value = '';
+    document.getElementById('nu-nome').value = '';
+    document.getElementById('nu-senha').value = '';
+    document.getElementById('nu-admin').checked = false;
+    carregarUsuarios();
+    toast('✓ Usuário criado', `${nome} pode entrar com a senha definida`, 'ok');
+  } catch(e) { err.textContent='Erro ao criar usuário.'; err.classList.add('show'); }
+}
+
+function abrirReset(id, usuario) {
+  resetUserId = id;
+  document.getElementById('reset-desc').textContent = `Definir nova senha para "${usuario}". A pessoa será obrigada a trocá-la no próximo acesso.`;
+  document.getElementById('reset-senha').value = '';
+  document.getElementById('msg-reset-err').classList.remove('show');
+  document.getElementById('modal-reset').classList.add('show');
+}
+
+async function confirmarReset() {
+  const err = document.getElementById('msg-reset-err');
+  err.classList.remove('show');
+  const senha = document.getElementById('reset-senha').value;
+  if (!senha || senha.length < 4) { err.textContent='A senha deve ter ao menos 4 caracteres.'; err.classList.add('show'); return; }
+  try {
+    const r = await api(`/api/usuarios/${resetUserId}/resetar-senha`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ senha })
+    });
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.error; err.classList.add('show'); return; }
+    fecharModal('reset');
+    toast('✓ Senha resetada', 'A pessoa deve trocá-la no próximo acesso', 'ok');
+  } catch(e) { err.textContent='Erro ao resetar.'; err.classList.add('show'); }
+}
+
+async function removerUsuario(id, usuario) {
+  if (!confirm(`Remover o usuário "${usuario}"? Esta ação não pode ser desfeita.`)) return;
+  try {
+    const r = await api(`/api/usuarios/${id}`, { method:'DELETE' });
+    const d = await r.json();
+    if (!r.ok) { alert(d.error); return; }
+    carregarUsuarios();
+  } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   // Injeta área de cards antes do painel principal
   const main = document.querySelector('.main');
   const cardsDiv = document.createElement('div');
   cardsDiv.id = 'cards-area';
   main.insertBefore(cardsDiv, main.firstChild);
 
-  // Retoma sessão
-  const nome  = sessionStorage.getItem('es_nome');
-  const setor = sessionStorage.getItem('es_setor');
-  if (nome && setor) { NOME=nome; SETOR=setor; iniciarApp(); }
+  // Retoma sessão se houver token salvo
+  const token = sessionStorage.getItem('es_token');
+  if (token) {
+    TOKEN = token;
+    try {
+      const r = await fetch('/api/me', { headers:{'x-token':token} });
+      if (r.ok) {
+        const d = await r.json();
+        NOME = d.nome; IS_ADMIN = d.is_admin;
+        if (d.deve_trocar) { mostrarTrocarSenha(); return; }
+        iniciarApp();
+      } else {
+        sessionStorage.clear();
+      }
+    } catch(e) { sessionStorage.clear(); }
+  }
 });
 </script>
 </body>

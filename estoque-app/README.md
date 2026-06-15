@@ -104,9 +104,59 @@ estoque.db     — banco de dados (criado automaticamente)
 
 ---
 
+## Login e usuários
+
+O sistema exige login com usuário e senha.
+
+### Primeiro acesso
+
+Na primeira vez que o sistema sobe, é criado um administrador:
+- **Usuário:** `admin`
+- **Senha:** `admin123` (ou o valor da variável de ambiente `ADMIN_SENHA`)
+
+No primeiro login, o sistema obriga a trocar essa senha.
+
+> **Dica de segurança:** defina a variável de ambiente `ADMIN_SENHA` no Render/Railway com uma senha forte, em vez de usar a padrão.
+
+### Gerenciar usuários (admin)
+
+O administrador vê o botão **⚙ Usuários** no topo. Lá é possível:
+- Criar novos usuários (com nome, login e senha inicial)
+- Marcar quem é administrador
+- Resetar a senha de alguém (a pessoa troca no próximo acesso)
+- Remover usuários
+
+Cada usuário criado é obrigado a trocar a senha no primeiro acesso. As senhas são guardadas com hash (PBKDF2), nunca em texto puro.
+
+---
+
 ## Tecnologias
 
 - **Node.js** + **Express** — servidor HTTP
 - **better-sqlite3** — banco de dados local (arquivo .db)
 - **ws** — WebSocket para atualizações em tempo real
 - HTML/CSS/JS puro — frontend sem frameworks
+
+---
+
+## Importação de NF-e (XML)
+
+O sistema lê o XML de notas fiscais de **entrada** (compras) e soma os itens ao estoque automaticamente.
+
+### Como funciona o casamento de itens
+
+Como o código do produto na nota do fornecedor (cProd) nem sempre bate com o código do seu cadastro (Neski), o sistema tenta casar nesta ordem:
+
+1. **Vínculo memorizado** — se você já vinculou aquele produto daquele fornecedor antes, casa sozinho
+2. **Referência interna** — se o cProd da nota bate com a "Ref. Interna" do seu cadastro
+3. **Descrição** — comparação aproximada pela descrição do produto
+
+### Fluxo de uso
+
+1. Aba **Importar NF-e** → suba o arquivo XML da nota
+2. O sistema mostra todos os itens, já casando o que conseguir automaticamente
+3. Para os que não casaram, você vincula manualmente buscando no seu cadastro
+4. Marque "memorizar" para que da próxima vez aquele item case sozinho
+5. Clique em **Confirmar** — as quantidades são somadas ao estoque
+
+A mesma nota não é importada duas vezes por engano (o sistema avisa pela chave de acesso).
