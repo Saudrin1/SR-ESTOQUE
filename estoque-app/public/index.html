@@ -489,14 +489,14 @@
 
     <!-- ── LEITURA RÁPIDA (código de barras) ── -->
     <div class="panel" id="panel-leitura">
-      <p class="section-title">⚡ Leitura rápida por código de barras</p>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Escaneie o código de barras do produto. Cada leitura dá baixa de 1 unidade como venda, na hora.</p>
+      <p class="section-title">Leitura rápida por código de barras</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Escaneie o código de barras do produto. Cada leitura dá baixa de 1 unidade como venda, na hora. Não precisa clicar no campo — basta estar nesta aba e escanear.</p>
 
       <div class="scan-box" id="scan-box" onclick="document.getElementById('scan-input').focus()">
         <div class="scan-icon">📷</div>
         <input type="text" id="scan-input" class="scan-input" placeholder="Aponte o leitor e escaneie..." autocomplete="off"
           onkeydown="if(event.key==='Enter'){event.preventDefault();processarScan(this.value);this.value='';}">
-        <div class="scan-status" id="scan-status">Pronto para ler — o cursor precisa estar aqui</div>
+        <div class="scan-status" id="scan-status">Pronto para ler — pode escanear a qualquer momento</div>
       </div>
 
       <div class="scan-feedback" id="scan-feedback"></div>
@@ -630,7 +630,7 @@
 
     <!-- ── BACKUP ── -->
     <div class="panel" id="panel-backup">
-      <p class="section-title">💾 Backup do banco de dados</p>
+      <p class="section-title">Backup do banco de dados</p>
       <p style="font-size:13px;color:var(--text2);margin-bottom:18px">Antes de atualizar o sistema, <strong>exporte</strong> o backup. Depois da atualização, <strong>importe</strong> o arquivo para restaurar tudo exatamente como estava.</p>
 
       <div class="backup-grid">
@@ -902,14 +902,14 @@ function iniciarApp() {
 //  NAVEGAÇÃO DINÂMICA
 // ═══════════════════════════════════════
 const TABS_ESTOQUE = [
-  { id:'leitura',   label:'⚡ Leitura Rápida' },
+  { id:'leitura',   label:'Leitura Rápida' },
   { id:'saida',     label:'Registrar Saída' },
   { id:'ajuste',    label:'Ajustar Estoque' },
   { id:'nfe',       label:'Importar NF-e' },
   { id:'historico', label:'Histórico' },
   { id:'estoque',   label:'Estoque'   },
   { id:'alertas',   label:'Alertas',  badge:'alt' },
-  { id:'backup',    label:'💾 Backup' },
+  { id:'backup',    label:'Backup' },
 ];
 
 function construirNav() {
@@ -1292,6 +1292,59 @@ function bipe(sucesso = true) {
   } catch(e) {}
 }
 
+// ── CAPTURA GLOBAL DO SCANNER ──
+// O leitor de código de barras "digita" muito rápido e termina com Enter.
+// Capturamos as teclas em qualquer lugar da página (enquanto a aba Leitura
+// estiver ativa), então não precisa estar com o cursor no campo.
+let scanBuffer = '';
+let scanUltimaTecla = 0;
+
+function painelLeituraAtivo() {
+  const p = document.getElementById('panel-leitura');
+  return p && p.classList.contains('active');
+}
+
+document.addEventListener('keydown', e => {
+  // Só captura na aba de leitura e se nenhum modal estiver aberto
+  if (!painelLeituraAtivo()) return;
+  if (document.querySelector('.overlay.show')) return;
+
+  // Se o foco já está no campo de leitura, deixamos o handler do próprio campo
+  // cuidar (evita processar duas vezes).
+  if (document.activeElement === document.getElementById('scan-input')) return;
+
+  const agora = Date.now();
+  // Se passou muito tempo entre teclas (>120ms), é digitação humana — reinicia o buffer
+  if (agora - scanUltimaTecla > 120) scanBuffer = '';
+  scanUltimaTecla = agora;
+
+  if (e.key === 'Enter') {
+    if (scanBuffer.length >= 3) {
+      processarScan(scanBuffer);
+      scanBuffer = '';
+      e.preventDefault();
+    }
+    return;
+  }
+  // Acumula apenas caracteres "imprimíveis" (números, letras)
+  if (e.key.length === 1) {
+    scanBuffer += e.key;
+  }
+});
+
+// Reforço: mantém o campo focado enquanto a aba estiver ativa
+setInterval(() => {
+  if (painelLeituraAtivo() && !document.querySelector('.overlay.show')) {
+    const inp = document.getElementById('scan-input');
+    if (inp && document.activeElement !== inp) {
+      // só refoca se o usuário não estiver digitando em outro campo de texto
+      const ae = document.activeElement;
+      const digitando = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT');
+      if (!digitando) inp.focus();
+    }
+  }
+}, 800);
+
 async function processarScan(valor) {
   const ean = (valor || '').trim();
   if (!ean || scanProcessando) return;
@@ -1324,7 +1377,7 @@ async function processarScan(valor) {
     flashScan('erro', '✕', 'Erro na leitura', 'Tente novamente');
   } finally {
     scanProcessando = false;
-    status.textContent = 'Pronto para ler — o cursor precisa estar aqui';
+    status.textContent = 'Pronto para ler — pode escanear a qualquer momento';
     status.className = 'scan-status';
     document.getElementById('scan-input').focus();
   }
