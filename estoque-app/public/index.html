@@ -32,9 +32,8 @@
     border-radius:var(--radius-lg); padding:40px; width:380px; max-width:100%;
     box-shadow:0 24px 64px rgba(0,0,0,.5);
   }
-  .login-logo { font-size:22px; font-weight:700; margin-bottom:6px; }
-  .login-logo span { color:var(--accent); }
-  .login-sub { font-size:13px; color:var(--text2); margin-bottom:28px; }
+  .login-logo-img { display:block; width:220px; max-width:100%; margin:0 auto 14px; }
+  .login-sub { font-size:13px; color:var(--text2); margin-bottom:28px; text-align:center; }
   .login-label { font-size:12px; color:var(--text2); margin-bottom:5px; display:block; }
   .login-input {
     width:100%; padding:10px 12px; background:var(--bg3);
@@ -72,6 +71,7 @@
   .topbar-left { display:flex; align-items:center; gap:12px; }
   .topbar-logo { font-size:15px; font-weight:600; }
   .topbar-logo span { color:var(--accent); }
+  .topbar-logo-img { height:30px; display:block; }
   .setor-tag {
     font-size:11px; font-weight:600; padding:3px 9px;
     border-radius:20px; letter-spacing:.03em;
@@ -310,19 +310,10 @@
 <!-- ═══ TELA DE LOGIN ═══ -->
 <div class="login-screen" id="login-screen">
   <div class="login-card">
-    <div class="login-logo">Estoque<span>.</span>ctrl</div>
+    <img src="logo.png" alt="Sérgio Radiadores" class="login-logo-img">
     <div class="login-sub">Sistema de controle de estoque em tempo real</div>
     <label class="login-label">Seu nome</label>
-    <input class="login-input" type="text" id="login-nome" placeholder="Ex: João Silva" autocomplete="off">
-    <label class="login-label" style="margin-bottom:8px">Selecione seu setor</label>
-    <div class="setor-btns">
-      <button class="setor-btn" id="btn-estoque" onclick="selecionarSetor('estoque')">
-        <span class="icon">📦</span>Estoque
-      </button>
-      <button class="setor-btn" id="btn-vendas" onclick="selecionarSetor('vendas')">
-        <span class="icon">🛒</span>Vendas
-      </button>
-    </div>
+    <input class="login-input" type="text" id="login-nome" placeholder="Ex: João Silva" autocomplete="off" onkeydown="if(event.key==='Enter')entrar()">
     <button class="btn-entrar" onclick="entrar()">Entrar →</button>
   </div>
 </div>
@@ -333,8 +324,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
-      <div class="topbar-logo">Estoque<span>.</span>ctrl</div>
-      <span class="setor-tag" id="tag-setor"></span>
+      <img src="logo.png" alt="Sérgio Radiadores" class="topbar-logo-img">
     </div>
     <div class="topbar-right">
       <div class="ws-dot" id="ws-dot" title="Status da conexão"></div>
@@ -468,44 +458,6 @@
       <div id="tab-alert"></div>
     </div>
 
-    <!-- ── VENDAS: Fazer Pedido ── -->
-    <div class="panel" id="panel-pedido">
-      <p class="section-title">Solicitar item ao estoque</p>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">O setor de estoque receberá a solicitação em tempo real.</p>
-      <div class="search-wrap">
-        <span class="s-icon">🔍</span>
-        <input type="text" id="busca-p" placeholder="Buscar item para solicitar..." autocomplete="off"
-          oninput="buscar('p',this.value)" onfocus="buscar('p',this.value)">
-        <div class="dropdown" id="dd-p"></div>
-      </div>
-      <div class="sel-box" id="sel-p">
-        <h3 id="sel-p-nome"></h3>
-        <div class="meta">Cód: <strong id="sel-p-cod"></strong> | Ref: <span id="sel-p-ref"></span> | Disponível: <strong id="sel-p-qt"></strong></div>
-        <div class="stock-bar"><div class="stock-fill" id="sel-p-bar" style="width:100%"></div></div>
-      </div>
-      <div class="msg msg-ok"  id="msg-p-ok"></div>
-      <div class="msg msg-err" id="msg-p-err"></div>
-      <div class="form-grid">
-        <div class="fg"><label>Quantidade</label><input type="number" id="p-qty" min="1" value="1"></div>
-        <div class="fg form-full"><label>Observação / urgência</label><input type="text" id="p-obs" placeholder="Ex: urgente, para entrega de amanhã"></div>
-      </div>
-      <button class="btn btn-purple" onclick="fazerPedido()">📨 Enviar solicitação</button>
-    </div>
-
-    <!-- ── VENDAS / ESTOQUE: Pedidos ── -->
-    <div class="panel" id="panel-pedidos">
-      <p class="section-title" id="pedidos-titulo">Pedidos</p>
-      <div class="filters">
-        <select id="ped-status" onchange="carregarPedidos()">
-          <option value="">Todos os status</option>
-          <option value="pendente">Pendentes</option>
-          <option value="atendido">Atendidos</option>
-          <option value="cancelado">Cancelados</option>
-        </select>
-      </div>
-      <div id="tab-pedidos"></div>
-    </div>
-
   </div><!-- /main -->
 </div><!-- /app -->
 
@@ -555,16 +507,10 @@ let pagE = 1, filtE = [];
 // ═══════════════════════════════════════
 //  LOGIN
 // ═══════════════════════════════════════
-function selecionarSetor(s) {
-  SETOR = s;
-  document.getElementById('btn-estoque').classList.toggle('selected', s==='estoque');
-  document.getElementById('btn-vendas').classList.toggle('selected', s==='vendas');
-}
-
 function entrar() {
   NOME = document.getElementById('login-nome').value.trim();
   if (!NOME) { alert('Informe seu nome.'); return; }
-  if (!SETOR) { alert('Selecione seu setor.'); return; }
+  SETOR = 'estoque';
   sessionStorage.setItem('es_nome', NOME);
   sessionStorage.setItem('es_setor', SETOR);
   iniciarApp();
@@ -581,16 +527,12 @@ function sair() {
 // ═══════════════════════════════════════
 function iniciarApp() {
   NOME  = sessionStorage.getItem('es_nome')  || NOME;
-  SETOR = sessionStorage.getItem('es_setor') || SETOR;
-  if (!NOME || !SETOR) return;
+  SETOR = 'estoque';
+  if (!NOME) return;
 
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display   = 'block';
   document.getElementById('user-info').textContent = NOME;
-
-  const tag = document.getElementById('tag-setor');
-  tag.textContent  = SETOR === 'estoque' ? '📦 Estoque' : '🛒 Vendas';
-  tag.className    = 'setor-tag ' + (SETOR==='estoque' ? 'tag-estoque' : 'tag-vendas');
 
   construirNav();
   conectarWS();
@@ -604,27 +546,17 @@ function iniciarApp() {
 const TABS_ESTOQUE = [
   { id:'saida',     label:'Registrar Saída' },
   { id:'ajuste',    label:'Ajustar Estoque' },
-  { id:'pedidos',   label:'Pedidos',  badge:'ped' },
   { id:'historico', label:'Histórico' },
   { id:'estoque',   label:'Estoque'   },
   { id:'alertas',   label:'Alertas',  badge:'alt' },
 ];
-const TABS_VENDAS = [
-  { id:'pedido',    label:'Solicitar Item' },
-  { id:'pedidos',   label:'Meus Pedidos',  badge:'ped' },
-  { id:'estoque',   label:'Ver Estoque'    },
-  { id:'historico', label:'Histórico'      },
-];
 
 function construirNav() {
-  const tabs = SETOR === 'estoque' ? TABS_ESTOQUE : TABS_VENDAS;
+  const tabs = TABS_ESTOQUE;
   const nav  = document.getElementById('nav-tabs');
   nav.innerHTML = tabs.map(t =>
     `<button class="tab-btn" id="tab-${t.id}" onclick="showPanel('${t.id}')">${t.label}${t.badge?`<span class="nb" id="nb-${t.badge}" style="display:none">0</span>`:''}</button>`
   ).join('');
-  if (SETOR === 'vendas') {
-    document.getElementById('pedidos-titulo').textContent = 'Minhas Solicitações';
-  }
 }
 
 function showPanel(id) {
@@ -675,20 +607,6 @@ function tratarMensagem(data) {
       if (document.getElementById('panel-historico').classList.contains('active')) carregarHistorico();
       if (document.getElementById('panel-estoque').classList.contains('active'))   carregarEstoque();
       break;
-    case 'novo_pedido':
-      carregarStats();
-      if (SETOR === 'estoque') {
-        toast('🛒 Nova solicitação de Vendas', `${data.pedido.desc.substring(0,35)} — ${data.pedido.qty} un.`, 'purple');
-      }
-      if (document.getElementById('panel-pedidos').classList.contains('active')) carregarPedidos();
-      break;
-    case 'pedido_atualizado':
-      if (SETOR === 'vendas') {
-        const st = { atendido:'✓ Atendido', cancelado:'✕ Cancelado' }[data.pedido.status];
-        if (st) toast(st, data.pedido.desc.substring(0,40), data.pedido.status==='atendido'?'ok':'err');
-      }
-      if (document.getElementById('panel-pedidos').classList.contains('active')) carregarPedidos();
-      break;
     case 'movimentacao_removida':
       if (document.getElementById('panel-historico').classList.contains('active')) carregarHistorico();
       carregarStats();
@@ -703,27 +621,14 @@ async function carregarStats() {
   try {
     const r = await fetch('/api/stats');
     const s = await r.json();
-    if (SETOR === 'estoque') {
-      document.getElementById('cards-area').innerHTML = `
-        <div class="cards cards-5">
-          <div class="card"><div class="card-label">Total de itens</div><div class="card-value">${s.total}</div><div class="card-sub">no cadastro</div></div>
-          <div class="card"><div class="card-label">Saídas hoje</div><div class="card-value cv-green">${s.hoje}</div><div class="card-sub">registros</div></div>
-          <div class="card"><div class="card-label">Ajustes hoje</div><div class="card-value cv-orange">${s.ajustes}</div><div class="card-sub">correções</div></div>
-          <div class="card"><div class="card-label">Estoque baixo</div><div class="card-value cv-yellow">${s.baixo}</div><div class="card-sub">itens com alerta</div></div>
-          <div class="card"><div class="card-label">Pedidos pendentes</div><div class="card-value cv-purple">${s.pedidos_pendentes}</div><div class="card-sub">de vendas</div></div>
-        </div>`;
-    } else {
-      document.getElementById('cards-area').innerHTML = `
-        <div class="cards cards-4">
-          <div class="card"><div class="card-label">Total de itens</div><div class="card-value">${s.total}</div><div class="card-sub">no cadastro</div></div>
-          <div class="card"><div class="card-label">Estoque baixo</div><div class="card-value cv-yellow">${s.baixo}</div><div class="card-sub">itens com alerta</div></div>
-          <div class="card"><div class="card-label">Sem estoque</div><div class="card-value cv-red">${s.zero}</div><div class="card-sub">itens esgotados</div></div>
-          <div class="card"><div class="card-label">Minhas solicitações</div><div class="card-value cv-purple">${s.pedidos_pendentes}</div><div class="card-sub">pendentes</div></div>
-        </div>`;
-    }
-    // Badge pedidos
-    const nb = document.getElementById('nb-ped');
-    if (nb) { nb.textContent = s.pedidos_pendentes; nb.style.display = s.pedidos_pendentes > 0 ? '' : 'none'; }
+    document.getElementById('cards-area').innerHTML = `
+      <div class="cards cards-5">
+        <div class="card"><div class="card-label">Total de itens</div><div class="card-value">${s.total}</div><div class="card-sub">no cadastro</div></div>
+        <div class="card"><div class="card-label">Saídas hoje</div><div class="card-value cv-green">${s.hoje}</div><div class="card-sub">registros</div></div>
+        <div class="card"><div class="card-label">Ajustes hoje</div><div class="card-value cv-orange">${s.ajustes}</div><div class="card-sub">correções</div></div>
+        <div class="card"><div class="card-label">Estoque baixo</div><div class="card-value cv-yellow">${s.baixo}</div><div class="card-sub">itens com alerta</div></div>
+        <div class="card"><div class="card-label">Sem estoque</div><div class="card-value cv-red">${s.zero}</div><div class="card-sub">itens esgotados</div></div>
+      </div>`;
     // Badge alertas
     const nba = document.getElementById('nb-alt');
     if (nba) { nba.textContent = s.baixo + s.zero; nba.style.display = (s.baixo+s.zero) > 0 ? '' : 'none'; }
