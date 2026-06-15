@@ -382,7 +382,7 @@
 <div class="login-screen" id="login-screen">
   <div class="login-card">
     <img src="logo.png" alt="Sérgio Radiadores" class="login-logo-img">
-    <div class="login-sub">Sistema de controle de estoque em tempo real</div>
+    <div class="login-sub">Sistema de controle de estoque</div>
     <label class="login-label">Usuário</label>
     <input class="login-input" type="text" id="login-user" placeholder="Seu usuário" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()">
     <label class="login-label">Senha</label>
@@ -1069,13 +1069,15 @@ function renderHistorico(rows) {
   const podeDeletar = SETOR === 'estoque';
   tab.innerHTML = `<div class="table-wrap"><table>
     <thead><tr>
-      <th style="width:125px">Data/Hora</th>
+      <th style="width:120px">Data/Hora</th>
       <th>Item</th>
-      <th style="width:60px">Tipo</th>
-      <th style="width:110px">Detalhe</th>
-      <th style="width:95px">Motivo</th>
-      <th style="width:110px">Responsável</th>
-      ${podeDeletar ? '<th style="width:36px"></th>' : ''}
+      <th style="width:58px">Tipo</th>
+      <th style="width:95px">Detalhe</th>
+      <th style="width:85px">Motivo</th>
+      <th style="width:100px">Nome</th>
+      <th style="width:80px">OS/Pedido</th>
+      <th>Observação</th>
+      ${podeDeletar ? '<th style="width:34px"></th>' : ''}
     </tr></thead><tbody>` +
   rows.map(m => {
     const isSaida   = m.tipo === 'saida';
@@ -1091,21 +1093,23 @@ function renderHistorico(rows) {
     const rowCls = isSaida ? '' : (isEntrada ? 'row-entrada' : 'row-ajuste');
     return `<tr class="${rowCls}">
       <td style="font-size:11px;color:var(--text3)">${fdt(m.criado_em)}</td>
-      <td title="${m.desc}">${m.desc.substring(0,36)}<br><span style="font-size:11px;color:var(--text3)">${m.cod}</span></td>
+      <td title="${m.desc}">${m.desc.substring(0,32)}<br><span style="font-size:11px;color:var(--text3)">${m.cod}</span></td>
       <td>${tipoBadge}</td>
       <td>${detalhe}</td>
       <td style="font-size:12px;color:var(--text2)">${motL[m.motivo]||m.motivo}</td>
       <td>${m.pessoa}</td>
+      <td style="font-size:12px;color:var(--text2)">${m.os||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)" title="${m.obs||''}">${m.obs ? m.obs.substring(0,40) : '—'}</td>
       ${podeDeletar ? `<td><button class="btn btn-ghost btn-sm" onclick="abrirModalExcluir(${m.id})" style="color:var(--red);padding:3px 7px;font-size:12px">✕</button></td>` : ''}
     </tr>`;
   }).join('') + '</tbody></table></div>';
 }
 
 function exportarCSV() {
-  const rows = [['Data/Hora','Tipo','Código','Descrição','Detalhe','Motivo','Responsável']];
+  const rows = [['Data/Hora','Tipo','Código','Descrição','Detalhe','Motivo','Nome','OS/Pedido','Observação']];
   movs.forEach(m => {
     const det = m.tipo==='saida' ? `-${m.qty}` : `${m.anterior_qt}→${m.novo_qt}(${m.diff>=0?'+':''}${m.diff})`;
-    rows.push([m.criado_em, m.tipo, m.cod, m.desc, det, m.motivo, m.pessoa]);
+    rows.push([m.criado_em, m.tipo, m.cod, m.desc, det, m.motivo, m.pessoa, m.os||'', m.obs||'']);
   });
   const csv = rows.map(r => r.map(c => '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = document.createElement('a');
