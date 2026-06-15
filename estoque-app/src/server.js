@@ -693,7 +693,7 @@ app.get('/api/barras/stats/total', autenticar, (req, res) => {
 // ─────────────────────────────────────────
 
 // Exportar: gera um .xlsx com abas "Estoque", "Movimentacoes" e "CodigosBarras"
-app.get('/api/backup/exportar', autenticar, async (req, res) => {
+app.get('/api/backup/exportar', autenticar, somenteAdmin, async (req, res) => {
   try {
     const wb = new ExcelJS.Workbook();
     wb.creator = 'Estoque.ctrl';
@@ -753,7 +753,7 @@ app.get('/api/backup/exportar', autenticar, async (req, res) => {
 });
 
 // Importar: recebe o .xlsx (base64) e RESTAURA tudo (substitui o conteúdo)
-app.post('/api/backup/importar', autenticar, async (req, res) => {
+app.post('/api/backup/importar', autenticar, somenteAdmin, async (req, res) => {
   const { arquivo } = req.body;
   if (!arquivo) return res.status(400).json({ error: 'Arquivo não enviado' });
 
