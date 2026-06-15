@@ -5,6 +5,7 @@ const http      = require('http');
 const WebSocket = require('ws');
 const path      = require('path');
 const crypto    = require('crypto');
+const ExcelJS   = require('exceljs');
 const Database  = require('better-sqlite3');
 
 // ─────────────────────────────────────────
@@ -95,6 +96,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS sessoes (
     token      TEXT PRIMARY KEY,
     usuario_id INTEGER NOT NULL,
+    criado_em  TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  -- Códigos de barras vinculados a itens do cadastro
+  CREATE TABLE IF NOT EXISTS codigos_barras (
+    ean        TEXT PRIMARY KEY,
+    cod        TEXT NOT NULL,
     criado_em  TEXT NOT NULL DEFAULT (datetime('now','localtime'))
   );
 `);
@@ -575,6 +583,13 @@ app.post('/api/nfe/confirmar', autenticar, (req, res) => {
             .run(nota.fornecCnpj, it.cProd, it.cod);
         } catch(e) {}
       }
+      // Salva o código de barras (EAN) do item, se a nota trouxe um válido
+      if (it.cEAN && String(it.cEAN).trim()) {
+        try {
+          db.prepare(`INSERT OR IGNORE INTO codigos_barras (ean, cod) VALUES (?,?)`)
+            .run(String(it.cEAN).trim(), it.cod);
+        } catch(e) {}
+      }
       resultado.aplicados++;
     }
 
@@ -594,6 +609,244 @@ app.post('/api/nfe/confirmar', autenticar, (req, res) => {
 // Listar notas já importadas
 app.get('/api/nfe/historico', autenticar, (req, res) => {
   res.json(db.prepare('SELECT * FROM notas_importadas ORDER BY criado_em DESC LIMIT 100').all());
+});
+
+// ─────────────────────────────────────────
+//  CÓDIGO DE BARRAS — leitura rápida
+// ─────────────────────────────────────────
+
+// Consulta um código de barras: retorna o item vinculado (ou null se desconhecido)
+app.get('/api/barras/:ean', autenticar, (req, res) => {
+  const ean = String(req.params.ean).trim();
+  const vinc = db.prepare('SELECT cod FROM codigos_barras WHERE ean = ?').get(ean);
+  if (!vinc) return res.json({ vinculado: false, ean });
+  const item = db.prepare('SELECT * FROM itens WHERE cod = ?').get(vinc.cod);
+  if (!item) return res.json({ vinculado: false, ean });
+  res.json({ vinculado: true, ean, item });
+});
+
+// Escaneia e dá baixa de 1 unidade (modo rápido). Se o EAN não estiver
+// vinculado, retorna vinculado:false e NÃO baixa nada.
+app.post('/api/barras/scan', autenticar, (req, res) => {
+  const ean = String(req.body.ean || '').trim();
+  if (!ean) return res.status(400).json({ error: 'Código de barras vazio' });
+
+  const vinc = db.prepare('SELECT cod FROM codigos_barras WHERE ean = ?').get(ean);
+  if (!vinc) return res.json({ vinculado: false, ean });
+
+  const item = db.prepare('SELECT * FROM itens WHERE cod = ?').get(vinc.cod);
+  if (!item) return res.json({ vinculado: false, ean });
+  if (item.qt <= 0) return res.status(400).json({ error: 'Estoque zerado', item, vinculado: true, semEstoque: true });
+
+  const registrar = db.transaction(() => {
+    db.prepare('UPDATE itens SET qt = qt - 1 WHERE cod = ?').run(item.cod);
+    const info = db.prepare(`
+      INSERT INTO movimentacoes (tipo, cod, desc, ref, qty, anterior_qt, novo_qt, diff, motivo, pessoa, os, obs, setor)
+      VALUES ('saida',?,?,?,1,?,?,-1,'venda',?,'','Leitura de código de barras','estoque')
+    `).run(item.cod, item.desc, item.ref, item.qt, item.qt - 1, req.user.nome);
+    return db.prepare('SELECT * FROM movimentacoes WHERE id = ?').get(info.lastInsertRowid);
+  });
+
+  const mov = registrar();
+  const itemAtualizado = db.prepare('SELECT * FROM itens WHERE cod = ?').get(item.cod);
+  broadcast({ tipo: 'nova_saida', mov, item: itemAtualizado });
+  res.json({ vinculado: true, ok: true, mov, item: itemAtualizado });
+});
+
+// Vincula um código de barras a um item do cadastro (e opcionalmente baixa 1)
+app.post('/api/barras/vincular', autenticar, (req, res) => {
+  const ean = String(req.body.ean || '').trim();
+  const cod = String(req.body.cod || '').trim();
+  const baixar = !!req.body.baixar;
+  if (!ean || !cod) return res.status(400).json({ error: 'EAN e item são obrigatórios' });
+
+  const item = db.prepare('SELECT * FROM itens WHERE cod = ?').get(cod);
+  if (!item) return res.status(404).json({ error: 'Item não encontrado' });
+
+  db.prepare('INSERT OR REPLACE INTO codigos_barras (ean, cod) VALUES (?,?)').run(ean, cod);
+
+  let mov = null, itemAtualizado = item;
+  if (baixar && item.qt > 0) {
+    const registrar = db.transaction(() => {
+      db.prepare('UPDATE itens SET qt = qt - 1 WHERE cod = ?').run(item.cod);
+      const info = db.prepare(`
+        INSERT INTO movimentacoes (tipo, cod, desc, ref, qty, anterior_qt, novo_qt, diff, motivo, pessoa, os, obs, setor)
+        VALUES ('saida',?,?,?,1,?,?,-1,'venda',?,'','Leitura de código de barras','estoque')
+      `).run(item.cod, item.desc, item.ref, item.qt, item.qt - 1, req.user.nome);
+      return db.prepare('SELECT * FROM movimentacoes WHERE id = ?').get(info.lastInsertRowid);
+    });
+    mov = registrar();
+    itemAtualizado = db.prepare('SELECT * FROM itens WHERE cod = ?').get(item.cod);
+    broadcast({ tipo: 'nova_saida', mov, item: itemAtualizado });
+  }
+  res.json({ ok: true, item: itemAtualizado, mov });
+});
+
+// Total de códigos de barras já cadastrados
+app.get('/api/barras/stats/total', autenticar, (req, res) => {
+  const n = db.prepare('SELECT COUNT(*) as n FROM codigos_barras').get().n;
+  res.json({ total: n });
+});
+
+// ─────────────────────────────────────────
+//  BACKUP — Exportar / Importar .xlsx
+// ─────────────────────────────────────────
+
+// Exportar: gera um .xlsx com abas "Estoque", "Movimentacoes" e "CodigosBarras"
+app.get('/api/backup/exportar', autenticar, async (req, res) => {
+  try {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Estoque.ctrl';
+    wb.created = new Date();
+
+    const wsEst = wb.addWorksheet('Estoque');
+    wsEst.columns = [
+      { header: 'Código',       key: 'cod',  width: 12 },
+      { header: 'Descrição',    key: 'desc', width: 55 },
+      { header: 'Ref. Interna', key: 'ref',  width: 20 },
+      { header: 'Estoque',      key: 'qt',   width: 12 }
+    ];
+    const itens = db.prepare('SELECT cod, desc, ref, qt FROM itens ORDER BY cod').all();
+    itens.forEach(i => wsEst.addRow(i));
+
+    const wsMov = wb.addWorksheet('Movimentacoes');
+    wsMov.columns = [
+      { header: 'tipo', key: 'tipo', width: 10 },
+      { header: 'cod', key: 'cod', width: 12 },
+      { header: 'desc', key: 'desc', width: 45 },
+      { header: 'ref', key: 'ref', width: 18 },
+      { header: 'qty', key: 'qty', width: 8 },
+      { header: 'anterior_qt', key: 'anterior_qt', width: 12 },
+      { header: 'novo_qt', key: 'novo_qt', width: 10 },
+      { header: 'diff', key: 'diff', width: 8 },
+      { header: 'motivo', key: 'motivo', width: 12 },
+      { header: 'pessoa', key: 'pessoa', width: 18 },
+      { header: 'os', key: 'os', width: 14 },
+      { header: 'obs', key: 'obs', width: 35 },
+      { header: 'setor', key: 'setor', width: 10 },
+      { header: 'criado_em', key: 'criado_em', width: 20 }
+    ];
+    const movs = db.prepare('SELECT tipo,cod,desc,ref,qty,anterior_qt,novo_qt,diff,motivo,pessoa,os,obs,setor,criado_em FROM movimentacoes ORDER BY id').all();
+    movs.forEach(m => wsMov.addRow(m));
+
+    const wsBar = wb.addWorksheet('CodigosBarras');
+    wsBar.columns = [
+      { header: 'ean', key: 'ean', width: 20 },
+      { header: 'cod', key: 'cod', width: 12 }
+    ];
+    const barras = db.prepare('SELECT ean, cod FROM codigos_barras ORDER BY ean').all();
+    barras.forEach(b => wsBar.addRow(b));
+
+    [wsEst, wsMov, wsBar].forEach(ws => {
+      ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C20' } };
+    });
+
+    const dataStr = new Date().toISOString().slice(0,10);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="backup_estoque_' + dataStr + '.xlsx"');
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao gerar o backup: ' + e.message });
+  }
+});
+
+// Importar: recebe o .xlsx (base64) e RESTAURA tudo (substitui o conteúdo)
+app.post('/api/backup/importar', autenticar, async (req, res) => {
+  const { arquivo } = req.body;
+  if (!arquivo) return res.status(400).json({ error: 'Arquivo não enviado' });
+
+  try {
+    const buffer = Buffer.from(arquivo, 'base64');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buffer);
+
+    const wsEst = wb.getWorksheet('Estoque');
+    if (!wsEst) return res.status(400).json({ error: 'O arquivo não tem a aba "Estoque". Use um arquivo gerado pela exportação.' });
+
+    const novosItens = [];
+    wsEst.eachRow((row, n) => {
+      if (n === 1) return;
+      const cod = row.getCell(1).value;
+      const desc = row.getCell(2).value;
+      const ref = row.getCell(3).value;
+      const qt = row.getCell(4).value;
+      if (cod === null || cod === undefined || cod === '') return;
+      novosItens.push({
+        cod: String(cod).trim(),
+        desc: desc != null ? String(desc).trim() : '',
+        ref: ref != null ? String(ref).trim() : '',
+        qt: parseInt(qt) || 0
+      });
+    });
+
+    if (!novosItens.length) return res.status(400).json({ error: 'Nenhum item válido encontrado na aba Estoque.' });
+
+    const wsMov = wb.getWorksheet('Movimentacoes') || wb.getWorksheet('Movimentações');
+    const novasMovs = [];
+    if (wsMov) {
+      wsMov.eachRow((row, n) => {
+        if (n === 1) return;
+        const tipo = row.getCell(1).value;
+        if (!tipo) return;
+        novasMovs.push({
+          tipo: String(tipo).trim(),
+          cod: row.getCell(2).value != null ? String(row.getCell(2).value).trim() : '',
+          desc: row.getCell(3).value != null ? String(row.getCell(3).value).trim() : '',
+          ref: row.getCell(4).value != null ? String(row.getCell(4).value).trim() : '',
+          qty: parseInt(row.getCell(5).value) || 0,
+          anterior_qt: row.getCell(6).value != null ? parseInt(row.getCell(6).value) : null,
+          novo_qt: row.getCell(7).value != null ? parseInt(row.getCell(7).value) : null,
+          diff: row.getCell(8).value != null ? parseInt(row.getCell(8).value) : null,
+          motivo: row.getCell(9).value != null ? String(row.getCell(9).value).trim() : 'outros',
+          pessoa: row.getCell(10).value != null ? String(row.getCell(10).value).trim() : '',
+          os: row.getCell(11).value != null ? String(row.getCell(11).value).trim() : '',
+          obs: row.getCell(12).value != null ? String(row.getCell(12).value).trim() : '',
+          setor: row.getCell(13).value != null ? String(row.getCell(13).value).trim() : '',
+          criado_em: row.getCell(14).value != null ? String(row.getCell(14).value).trim() : null
+        });
+      });
+    }
+
+    const wsBar = wb.getWorksheet('CodigosBarras');
+    const novasBarras = [];
+    if (wsBar) {
+      wsBar.eachRow((row, n) => {
+        if (n === 1) return;
+        const ean = row.getCell(1).value;
+        const cod = row.getCell(2).value;
+        if (!ean || !cod) return;
+        novasBarras.push({ ean: String(ean).trim(), cod: String(cod).trim() });
+      });
+    }
+
+    const restaurar = db.transaction(() => {
+      db.prepare('DELETE FROM itens').run();
+      const insItem = db.prepare('INSERT OR REPLACE INTO itens (cod, desc, ref, qt) VALUES (?,?,?,?)');
+      for (const i of novosItens) insItem.run(i.cod, i.desc, i.ref, i.qt);
+
+      if (wsMov) {
+        db.prepare('DELETE FROM movimentacoes').run();
+        const insMov = db.prepare("INSERT INTO movimentacoes (tipo,cod,desc,ref,qty,anterior_qt,novo_qt,diff,motivo,pessoa,os,obs,setor,criado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,COALESCE(?,datetime('now','localtime')))");
+        for (const m of novasMovs) {
+          insMov.run(m.tipo,m.cod,m.desc,m.ref,m.qty,m.anterior_qt,m.novo_qt,m.diff,m.motivo,m.pessoa,m.os,m.obs,m.setor,m.criado_em);
+        }
+      }
+
+      if (wsBar) {
+        db.prepare('DELETE FROM codigos_barras').run();
+        const insBar = db.prepare('INSERT OR REPLACE INTO codigos_barras (ean, cod) VALUES (?,?)');
+        for (const b of novasBarras) insBar.run(b.ean, b.cod);
+      }
+    });
+    restaurar();
+
+    broadcast({ tipo: 'backup_importado' });
+    res.json({ ok: true, itens: novosItens.length, movs: novasMovs.length, barras: novasBarras.length });
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao importar: ' + e.message });
+  }
 });
 
 // ── STATS ──────────────────────────────

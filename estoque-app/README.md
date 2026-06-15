@@ -130,6 +130,41 @@ Cada usuário criado é obrigado a trocar a senha no primeiro acesso. As senhas 
 
 ---
 
+## Leitura rápida por código de barras
+
+A aba **⚡ Leitura Rápida** permite dar baixa no estoque escaneando o código de barras do produto.
+
+### Como usar
+
+1. Conecte um leitor de código de barras USB (funciona como teclado — sem driver)
+2. Abra a aba **Leitura Rápida** e deixe o cursor no campo de leitura
+3. Escaneie o produto: cada leitura dá baixa de **1 unidade** como **venda**, na hora
+4. A cada leitura há confirmação visual e sonora, e a lista de baixas da sessão é atualizada
+
+### Primeira leitura de um produto
+
+Como o cadastro original não tem os códigos de barras, na primeira vez que um produto é escaneado o sistema pede para você vincular o código ao item do cadastro. A partir daí, aquele código já cai automaticamente.
+
+Os códigos de barras também são preenchidos automaticamente quando você importa NF-e (quando a nota traz o EAN do produto), reduzindo o trabalho de vínculo manual.
+
+---
+
+## Backup (exportar/importar .xlsx)
+
+Enquanto o banco não estiver em disco persistente, use a aba **💾 Backup** para não perder dados em atualizações.
+
+### Fluxo recomendado ao atualizar o sistema
+
+1. **Antes** de subir os arquivos novos no GitHub: abra a aba **Backup → Exportar agora** e guarde o arquivo `.xlsx`
+2. Faça a atualização normalmente (o Railway recria o banco vazio)
+3. **Depois** que o site voltar: abra **Backup → Importar**, escolha o arquivo exportado e confirme
+
+O arquivo de backup contém três abas: **Estoque** (saldos atuais), **Movimentacoes** (histórico completo) e **CodigosBarras** (vínculos de leitura). A importação **substitui** todo o conteúdo, restaurando o sistema exatamente como estava no momento do export.
+
+> **Dica:** exporte um backup ao fim de cada dia e guarde no Google Drive ou pen drive.
+
+---
+
 ## Tecnologias
 
 - **Node.js** + **Express** — servidor HTTP

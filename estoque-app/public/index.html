@@ -371,6 +371,60 @@
   .resultado-card .big { font-size:40px; margin-bottom:8px; }
   .resultado-card h3 { font-size:17px; font-weight:600; margin-bottom:6px; }
   .resultado-card p { font-size:13px; color:var(--text2); margin-bottom:16px; }
+  /* ── LEITURA RÁPIDA ── */
+  .scan-box {
+    border:2px solid var(--border2); border-radius:var(--radius-lg);
+    padding:28px 24px; text-align:center; cursor:text;
+    background:var(--bg2); transition:border-color .2s;
+  }
+  .scan-box:focus-within { border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-bg); }
+  .scan-icon { font-size:40px; margin-bottom:12px; }
+  .scan-input {
+    width:100%; max-width:440px; padding:12px 16px; text-align:center;
+    background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius);
+    color:var(--text); font-size:18px; font-family:var(--mono); letter-spacing:1px;
+    outline:none; margin:0 auto;
+  }
+  .scan-input:focus { border-color:var(--accent); }
+  .scan-status { font-size:12px; color:var(--text3); margin-top:10px; }
+  .scan-status.lendo { color:var(--accent); }
+  .scan-feedback { margin-top:14px; min-height:0; }
+  .scan-flash {
+    border-radius:var(--radius-lg); padding:16px 20px; display:flex;
+    align-items:center; gap:14px; animation:flashIn .2s ease;
+  }
+  @keyframes flashIn { from{transform:scale(.97);opacity:0} to{transform:scale(1);opacity:1} }
+  .scan-flash.ok    { background:var(--green-bg); border:1px solid rgba(34,197,94,.3); }
+  .scan-flash.erro  { background:var(--red-bg); border:1px solid rgba(239,68,68,.3); }
+  .scan-flash.novo  { background:var(--accent-bg); border:1px solid rgba(59,130,246,.3); }
+  .scan-flash-icon { font-size:32px; }
+  .scan-flash-body { flex:1; }
+  .scan-flash-title { font-size:15px; font-weight:600; margin-bottom:2px; }
+  .scan-flash-sub { font-size:13px; color:var(--text2); }
+  .scan-flash-qt { font-size:26px; font-weight:700; }
+  .scan-flash.ok .scan-flash-qt { color:var(--green); }
+  .scan-item-row {
+    display:flex; align-items:center; gap:12px; padding:9px 12px;
+    border-bottom:1px solid var(--border); font-size:13px;
+  }
+  .scan-item-row:last-child { border-bottom:none; }
+  .scan-item-hora { font-size:11px; color:var(--text3); width:54px; }
+  .scan-item-desc { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .scan-item-saldo { font-size:12px; color:var(--text2); }
+  /* ── BACKUP ── */
+  .backup-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .backup-card {
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:24px; text-align:center;
+  }
+  .backup-icon { font-size:38px; margin-bottom:12px; }
+  .backup-card h3 { font-size:16px; font-weight:600; margin-bottom:8px; }
+  .backup-card p { font-size:13px; color:var(--text2); margin-bottom:16px; min-height:54px; }
+  .backup-aviso {
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:var(--radius); padding:12px 16px; font-size:13px;
+    color:var(--text2); margin-top:18px;
+  }
   ::-webkit-scrollbar{width:6px;height:6px}
   ::-webkit-scrollbar-track{background:var(--bg)}
   ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -432,6 +486,27 @@
 
   <!-- MAIN -->
   <div class="main">
+
+    <!-- ── LEITURA RÁPIDA (código de barras) ── -->
+    <div class="panel" id="panel-leitura">
+      <p class="section-title">⚡ Leitura rápida por código de barras</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Escaneie o código de barras do produto. Cada leitura dá baixa de 1 unidade como venda, na hora.</p>
+
+      <div class="scan-box" id="scan-box" onclick="document.getElementById('scan-input').focus()">
+        <div class="scan-icon">📷</div>
+        <input type="text" id="scan-input" class="scan-input" placeholder="Aponte o leitor e escaneie..." autocomplete="off"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();processarScan(this.value);this.value='';}">
+        <div class="scan-status" id="scan-status">Pronto para ler — o cursor precisa estar aqui</div>
+      </div>
+
+      <div class="scan-feedback" id="scan-feedback"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 8px">
+        <div class="section-title" style="margin:0">Baixas desta sessão</div>
+        <div style="font-size:12px;color:var(--text3)">Total: <strong id="scan-contador" style="color:var(--green)">0</strong></div>
+      </div>
+      <div id="scan-lista"></div>
+    </div>
 
     <!-- ── ESTOQUE: Registrar Saída ── -->
     <div class="panel" id="panel-saida">
@@ -553,6 +628,37 @@
       <div id="tab-alert"></div>
     </div>
 
+    <!-- ── BACKUP ── -->
+    <div class="panel" id="panel-backup">
+      <p class="section-title">💾 Backup do banco de dados</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:18px">Antes de atualizar o sistema, <strong>exporte</strong> o backup. Depois da atualização, <strong>importe</strong> o arquivo para restaurar tudo exatamente como estava.</p>
+
+      <div class="backup-grid">
+        <div class="backup-card">
+          <div class="backup-icon">⬇️</div>
+          <h3>Exportar backup</h3>
+          <p>Baixa um arquivo .xlsx com todo o estoque, histórico de movimentações e códigos de barras.</p>
+          <button class="btn btn-primary" onclick="exportarBackup()">Exportar agora</button>
+        </div>
+
+        <div class="backup-card">
+          <div class="backup-icon">⬆️</div>
+          <h3>Importar backup</h3>
+          <p>Restaura o sistema a partir de um arquivo exportado. <strong style="color:var(--orange)">Substitui todos os dados atuais.</strong></p>
+          <input type="file" id="backup-file" accept=".xlsx" style="display:none" onchange="selecionarBackup(this.files[0])">
+          <button class="btn btn-ghost" onclick="document.getElementById('backup-file').click()">Escolher arquivo...</button>
+          <div id="backup-file-nome" style="font-size:12px;color:var(--text3);margin-top:8px"></div>
+        </div>
+      </div>
+
+      <div class="msg msg-ok"  id="msg-backup-ok" style="margin-top:16px"></div>
+      <div class="msg msg-err" id="msg-backup-err" style="margin-top:16px"></div>
+
+      <div class="backup-aviso">
+        <strong>💡 Dica:</strong> guarde o arquivo de backup num lugar seguro (Google Drive, pen drive). Recomendamos exportar um backup ao final de cada dia de trabalho também.
+      </div>
+    </div>
+
     <!-- ── IMPORTAR NF-e ── -->
     <div class="panel" id="panel-nfe">
       <p class="section-title">Importar nota fiscal de entrada (XML)</p>
@@ -659,6 +765,42 @@
   </div>
 </div>
 
+<!-- MODAL VINCULAR CÓDIGO DE BARRAS -->
+<div class="overlay" id="modal-barras">
+  <div class="modal" style="width:480px">
+    <h3>Código de barras novo</h3>
+    <p>O código <strong id="barras-ean" style="color:var(--accent)"></strong> ainda não está vinculado a nenhum item. Busque o item correspondente no seu cadastro:</p>
+    <div class="search-wrap" style="margin-bottom:10px">
+      <span class="s-icon">🔍</span>
+      <input type="text" id="barras-busca" placeholder="Buscar item por código, descrição ou ref..." autocomplete="off"
+        oninput="buscarVincBarras(this.value)">
+      <div class="dropdown" id="barras-dd"></div>
+    </div>
+    <div class="sel-box" id="barras-sel" style="margin-bottom:10px">
+      <h3 id="barras-sel-nome"></h3>
+      <div class="meta">Cód: <strong id="barras-sel-cod"></strong> | Estoque atual: <strong id="barras-sel-qt"></strong></div>
+    </div>
+    <div class="msg msg-err" id="msg-barras-err"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('barras')">Cancelar</button>
+      <button class="btn btn-success" id="btn-vinc-barras" onclick="confirmarVincBarras()" disabled>Vincular e dar baixa</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR IMPORTAÇÃO DE BACKUP -->
+<div class="overlay" id="modal-backup">
+  <div class="modal">
+    <h3>⚠ Confirmar restauração</h3>
+    <p>Isso vai <strong style="color:var(--red)">apagar todos os dados atuais</strong> (estoque, histórico e códigos de barras) e substituí-los pelo conteúdo do arquivo. Esta ação não pode ser desfeita.</p>
+    <p id="backup-resumo" style="background:var(--bg3);border-radius:8px;padding:10px 12px;font-size:13px"></p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('backup')">Cancelar</button>
+      <button class="btn btn-danger" id="btn-conf-import" onclick="confirmarImportBackup()">Sim, restaurar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════
 //  ESTADO GLOBAL
@@ -760,12 +902,14 @@ function iniciarApp() {
 //  NAVEGAÇÃO DINÂMICA
 // ═══════════════════════════════════════
 const TABS_ESTOQUE = [
+  { id:'leitura',   label:'⚡ Leitura Rápida' },
   { id:'saida',     label:'Registrar Saída' },
   { id:'ajuste',    label:'Ajustar Estoque' },
   { id:'nfe',       label:'Importar NF-e' },
   { id:'historico', label:'Histórico' },
   { id:'estoque',   label:'Estoque'   },
   { id:'alertas',   label:'Alertas',  badge:'alt' },
+  { id:'backup',    label:'💾 Backup' },
 ];
 
 function construirNav() {
@@ -787,6 +931,7 @@ function showPanel(id) {
   if (id === 'estoque')   carregarEstoque();
   if (id === 'alertas')   carregarAlertas();
   if (id === 'pedidos')   carregarPedidos();
+  if (id === 'leitura')   setTimeout(() => document.getElementById('scan-input')?.focus(), 100);
 }
 
 // ═══════════════════════════════════════
@@ -831,6 +976,12 @@ function tratarMensagem(data) {
     case 'nfe_importada':
       carregarStats();
       toast('📥 NF-e importada', `${data.resultado.aplicados} item(ns) adicionado(s) ao estoque`, 'ok');
+      if (document.getElementById('panel-historico').classList.contains('active')) carregarHistorico();
+      if (document.getElementById('panel-estoque').classList.contains('active'))   carregarEstoque();
+      break;
+    case 'backup_importado':
+      carregarStats();
+      toast('💾 Backup restaurado', 'Os dados foram atualizados', 'info');
       if (document.getElementById('panel-historico').classList.contains('active')) carregarHistorico();
       if (document.getElementById('panel-estoque').classList.contains('active'))   carregarEstoque();
       break;
@@ -1119,6 +1270,161 @@ function exportarCSV() {
 }
 
 // ═══════════════════════════════════════
+//  LEITURA RÁPIDA (CÓDIGO DE BARRAS)
+// ═══════════════════════════════════════
+let scanContador = 0;
+let scanProcessando = false;
+let barrasEanPendente = null, barrasItemSel = null;
+
+// Som de bipe via WebAudio (sem arquivo externo)
+function bipe(sucesso = true) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = sucesso ? 880 : 240;
+    osc.type = 'square';
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (sucesso ? 0.12 : 0.3));
+    osc.start();
+    osc.stop(ctx.currentTime + (sucesso ? 0.12 : 0.3));
+  } catch(e) {}
+}
+
+async function processarScan(valor) {
+  const ean = (valor || '').trim();
+  if (!ean || scanProcessando) return;
+  scanProcessando = true;
+  const status = document.getElementById('scan-status');
+  status.textContent = 'Lendo ' + ean + '...';
+  status.className = 'scan-status lendo';
+  try {
+    const r = await api('/api/barras/scan', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ ean })
+    });
+    const d = await r.json();
+    if (!r.ok && d.semEstoque) {
+      bipe(false);
+      flashScan('erro', '⚠', 'Estoque zerado', `${d.item.desc.substring(0,45)} — sem unidades disponíveis`);
+    } else if (d.vinculado && d.ok) {
+      bipe(true);
+      scanContador++;
+      document.getElementById('scan-contador').textContent = scanContador;
+      flashScan('ok', '✓', d.item.desc.substring(0,45), `Cód ${d.item.cod} — baixa registrada`, d.item.qt);
+      adicionarLinhaScan(d.item, d.mov);
+      carregarStats();
+    } else if (!d.vinculado) {
+      bipe(false);
+      abrirModalBarras(ean);
+    }
+  } catch(e) {
+    bipe(false);
+    flashScan('erro', '✕', 'Erro na leitura', 'Tente novamente');
+  } finally {
+    scanProcessando = false;
+    status.textContent = 'Pronto para ler — o cursor precisa estar aqui';
+    status.className = 'scan-status';
+    document.getElementById('scan-input').focus();
+  }
+}
+
+function flashScan(tipo, icon, titulo, sub, qt) {
+  const fb = document.getElementById('scan-feedback');
+  fb.innerHTML = `
+    <div class="scan-flash ${tipo}">
+      <span class="scan-flash-icon">${icon}</span>
+      <div class="scan-flash-body">
+        <div class="scan-flash-title">${titulo}</div>
+        <div class="scan-flash-sub">${sub}</div>
+      </div>
+      ${qt!==undefined ? `<div style="text-align:right"><div class="scan-flash-qt">${qt}</div><div style="font-size:11px;color:var(--text3)">em estoque</div></div>` : ''}
+    </div>`;
+}
+
+function adicionarLinhaScan(item, mov) {
+  const lista = document.getElementById('scan-lista');
+  if (lista.querySelector('.empty')) lista.innerHTML = '';
+  if (!lista.querySelector('.table-wrap')) lista.innerHTML = '<div class="table-wrap" id="scan-table"></div>';
+  const tbl = document.getElementById('scan-table');
+  const hora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const row = document.createElement('div');
+  row.className = 'scan-item-row';
+  row.innerHTML = `
+    <span class="scan-item-hora">${hora}</span>
+    <span class="scan-item-desc" title="${item.desc}">${item.desc.substring(0,50)}</span>
+    <span class="scan-item-saldo">−1 → resta <strong>${item.qt}</strong></span>`;
+  tbl.prepend(row);
+}
+
+// ── Modal de vínculo de código novo ──
+function abrirModalBarras(ean) {
+  barrasEanPendente = ean;
+  barrasItemSel = null;
+  document.getElementById('barras-ean').textContent = ean;
+  document.getElementById('barras-busca').value = '';
+  document.getElementById('barras-sel').classList.remove('show');
+  document.getElementById('msg-barras-err').classList.remove('show');
+  document.getElementById('btn-vinc-barras').disabled = true;
+  document.getElementById('modal-barras').classList.add('show');
+  setTimeout(() => document.getElementById('barras-busca').focus(), 100);
+}
+
+async function buscarVincBarras(q) {
+  const dd = document.getElementById('barras-dd');
+  if (!q || q.length < 2) { dd.classList.remove('show'); return; }
+  try {
+    const r = await api(`/api/itens?q=${encodeURIComponent(q)}`);
+    const items = await r.json();
+    if (!items.length) { dd.innerHTML='<div class="dd-item"><span class="dd-desc" style="color:var(--text3)">Nada encontrado</span></div>'; dd.classList.add('show'); return; }
+    dd.innerHTML = items.slice(0,12).map(it =>
+      `<div class="dd-item" onclick="selVincBarras('${it.cod}')">
+        <span class="dd-desc">${it.desc.substring(0,48)}</span>
+        <span class="dd-meta">${it.cod} | qt:${it.qt}</span>
+      </div>`).join('');
+    dd.classList.add('show');
+  } catch(e) {}
+}
+
+async function selVincBarras(cod) {
+  document.getElementById('barras-dd').classList.remove('show');
+  try {
+    const r = await api(`/api/itens/${cod}`);
+    const it = await r.json();
+    barrasItemSel = cod;
+    document.getElementById('barras-busca').value = it.desc;
+    document.getElementById('barras-sel-nome').textContent = it.desc;
+    document.getElementById('barras-sel-cod').textContent = it.cod;
+    document.getElementById('barras-sel-qt').textContent = it.qt;
+    document.getElementById('barras-sel').classList.add('show');
+    document.getElementById('btn-vinc-barras').disabled = false;
+  } catch(e) {}
+}
+
+async function confirmarVincBarras() {
+  const err = document.getElementById('msg-barras-err');
+  err.classList.remove('show');
+  if (!barrasItemSel || !barrasEanPendente) return;
+  try {
+    const r = await api('/api/barras/vincular', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ ean: barrasEanPendente, cod: barrasItemSel, baixar: true })
+    });
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.error; err.classList.add('show'); return; }
+    fecharModal('barras');
+    bipe(true);
+    scanContador++;
+    document.getElementById('scan-contador').textContent = scanContador;
+    flashScan('novo', '🔗', 'Código vinculado!', `${d.item.desc.substring(0,42)} — baixa registrada`, d.item.qt);
+    if (d.mov) adicionarLinhaScan(d.item, d.mov);
+    carregarStats();
+    document.getElementById('scan-input').focus();
+  } catch(e) { err.textContent='Erro ao vincular.'; err.classList.add('show'); }
+}
+
+// ═══════════════════════════════════════
 //  ESTOQUE
 // ═══════════════════════════════════════
 async function carregarEstoque() {
@@ -1359,6 +1665,7 @@ async function confirmarNFe() {
     .map(it => ({
       cod: it.sugestao.cod,
       cProd: it.nota.cProd,
+      cEAN: it.nota.cEAN,
       xProd: it.nota.xProd,
       qtd: it.nota.qtd,
       memorizar: it.memorizar !== false
@@ -1498,6 +1805,78 @@ function toast(titulo, msg, tipo='info') {
 // ═══════════════════════════════════════
 //  CARDS AREA (placeholder)
 // ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// ═══════════════════════════════════════
+//  BACKUP — Exportar / Importar
+// ═══════════════════════════════════════
+let backupArquivoB64 = null;
+
+async function exportarBackup() {
+  const ok  = document.getElementById('msg-backup-ok');
+  const err = document.getElementById('msg-backup-err');
+  ok.classList.remove('show'); err.classList.remove('show');
+  try {
+    const r = await fetch('/api/backup/exportar', { headers: { 'x-token': TOKEN } });
+    if (!r.ok) { err.textContent = 'Erro ao gerar o backup.'; err.classList.add('show'); return; }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'backup_estoque_' + new Date().toISOString().slice(0,10) + '.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+    ok.textContent = '✓ Backup exportado! Guarde o arquivo em local seguro.';
+    ok.classList.add('show');
+  } catch(e) { err.textContent = 'Erro ao exportar o backup.'; err.classList.add('show'); }
+}
+
+function selecionarBackup(file) {
+  const err = document.getElementById('msg-backup-err');
+  const ok  = document.getElementById('msg-backup-ok');
+  err.classList.remove('show'); ok.classList.remove('show');
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    err.textContent = 'Selecione um arquivo .xlsx válido.'; err.classList.add('show'); return;
+  }
+  document.getElementById('backup-file-nome').textContent = '📄 ' + file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    backupArquivoB64 = e.target.result.split(',')[1]; // remove o prefixo data:...
+    document.getElementById('backup-resumo').textContent = 'Arquivo selecionado: ' + file.name;
+    document.getElementById('modal-backup').classList.add('show');
+  };
+  reader.onerror = () => { err.textContent='Erro ao ler o arquivo.'; err.classList.add('show'); };
+  reader.readAsDataURL(file);
+}
+
+async function confirmarImportBackup() {
+  const err = document.getElementById('msg-backup-err');
+  const ok  = document.getElementById('msg-backup-ok');
+  const btn = document.getElementById('btn-conf-import');
+  if (!backupArquivoB64) return;
+  btn.disabled = true; btn.textContent = 'Restaurando...';
+  try {
+    const r = await api('/api/backup/importar', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ arquivo: backupArquivoB64 })
+    });
+    const d = await r.json();
+    fecharModal('backup');
+    btn.disabled = false; btn.textContent = 'Sim, restaurar';
+    if (!r.ok) { err.textContent = d.error || 'Erro ao importar.'; err.classList.add('show'); return; }
+    ok.textContent = `✓ Backup restaurado! ${d.itens} itens, ${d.movs} movimentações e ${d.barras} códigos de barras.`;
+    ok.classList.add('show');
+    document.getElementById('backup-file-nome').textContent = '';
+    document.getElementById('backup-file').value = '';
+    backupArquivoB64 = null;
+    carregarStats();
+  } catch(e) {
+    fecharModal('backup');
+    btn.disabled = false; btn.textContent = 'Sim, restaurar';
+    err.textContent = 'Erro ao comunicar com o servidor.'; err.classList.add('show');
+  }
+}
+
 // ═══════════════════════════════════════
 //  ADMIN: GESTÃO DE USUÁRIOS
 // ═══════════════════════════════════════
